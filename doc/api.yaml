@@ -106,7 +106,7 @@ components:
         Stream of posts displayed on the home page, with posts displayed in reverse chronological order.
       type: array
       items:
-        $ref: '#components/schemas/Post'
+        $ref: '#/components/schemas/Post'
 
     Comment:
       title: Comment
@@ -447,7 +447,7 @@ paths:
               type: object
               properties:
                 photo:
-                  $ref: '#components/schemas/Photo'
+                  $ref: '#/components/schemas/Photo'
                 description: 
                   type: string
                   pattern: ^(.|\s)*[a-zA-Z]+(.|\s)*$
@@ -1017,36 +1017,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  
-  /users/{username}/banned/:
-    parameters:
-        - in: path
-          name: username
-          schema:
-            $ref: '#/components/schemas/Username'
-          required: true
-
-    put:
-      operationId: banUser
-      tags: ['USER', 'BAN']
-      summary: Ban a new user
-      description: |-
-        Add a new user - here, 'ban_username' - in the list of the banned users for 'username'.
-      responses:
-        '204': # OK
-          description: User 'username' has now banned the user 'following_username'.
-        '400': # Bad request
-          description: Bad request provided.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404': # Resource not found
-          description: The user who is trying to ban the second user or this latter one has not been found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
     
   /users/{username}/banned/{banned_username}:
     parameters:
@@ -1154,3 +1124,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  
+  /users/{username}/banned/:
+    parameters:
+        - in: path
+          name: username
+          schema:
+            $ref: '#/components/schemas/Username'
+          required: true
+
+    get:
+      operationId: getBanUserList
+      tags: ['USER', 'BAN']
+      summary: Return user banlist.
+      description: |-
+        Return the list of banned users for the specified user.
+      responses:
+        '204': # OK
+          description: User 'username' has now banned the user 'following_username'.
+        '400': # Bad request
+          description: Bad request provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404': # Resource not found
+          description: The user who is trying to ban the second user or this latter one has not been found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+ 
