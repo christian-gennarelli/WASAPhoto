@@ -87,7 +87,6 @@ components:
         postid:
           $ref: '#/components/schemas/SHA256-random'
           description: Unique photo identifier (in a SHA256 format).
-          required: true
         creation-datetime: # Useful for the representation of the poststream, which must be displayed in reverse chronological order
           description: |-
             Date and time at which this post was created 
