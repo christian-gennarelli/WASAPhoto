@@ -657,6 +657,7 @@ paths:
         name: username
         schema:
           $ref: '#/components/schemas/Username'
+        description: Username of the post's owner from which liker_username wants to remove its like from.
         required: true
       - in: path
         name: post_id
@@ -665,7 +666,7 @@ paths:
         required: true
       - in: path
         name: liker_username
-        description: Username of the user that liked/wants to delete its like from the post.
+        description: Username of the user that liked username's post with id post_id and now wants to delete its like from it.
         schema:
           $ref: '#/components/schemas/Username'
         required: true
@@ -675,7 +676,7 @@ paths:
       tags: ['PHOTO']
       summary: Unlike a photo
       description: |-
-        Delete 'liker_username' from the list of likes oh 'username's post.
+        Delete 'liker_username' from the list of likers of 'username's post.
       security:
         - BearerAuth: []
       responses:
@@ -882,6 +883,7 @@ paths:
         schema:
           $ref: '#/components/schemas/Username'
         required: true
+
     get:
       operationId: getFollowersList
       tags: ['USER', 'FOLLOW']
@@ -916,20 +918,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  
-  /users/{username}/following/{following_username}:
-    parameters:
-        - in: path
-          name: username
-          schema:
-            $ref: '#/components/schemas/Username'
-          required: true
-        - in: path
-          name: following_username
-          schema:
-            $ref: '#/components/schemas/Username'
-          required: true
-
+                
+  /users/{username}/following/:
     put: 
       operationId: followUser
       summary: Follow a new user
@@ -973,6 +963,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  
+  /users/{username}/following/{following_username}:
+    parameters:
+        - in: path
+          name: username
+          schema:
+            $ref: '#/components/schemas/Username'
+          required: true
+        - in: path
+          name: following_username
+          schema:
+            $ref: '#/components/schemas/Username'
+          required: true
     
     delete: 
       operationId: unfollowUser
@@ -1029,56 +1032,6 @@ paths:
           schema:
             $ref: '#/components/schemas/Username'
           required: true
-    put: 
-      operationId: banUser
-      tags: ['USER', 'BAN']
-      summary: Ban a new user
-      description: |-
-        Add a new user - here, 'ban_username' - in the list of the banned users for 'username'.
-      parameters:
-        - in: query
-          name: banned_username
-          description: Username of the user that must be added to the list of the banned users for this user.
-          schema:
-            $ref: '#/components/schemas/Username'
-          required: true
-      security:
-        - BearerAuth: []
-      responses:
-        '204': # OK Created
-          description: User 'banned_username' has been successfully added to the ban list.
-        '400': # Bad request
-          description: Bad request provided.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401': # Unauthenticated
-          description: The client has not been authenticated (yet).
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403': # Unauthorized
-          description: |-
-            The authenticated user cannot ban another user on behalf of some other user.
-            That is, the authenticated user's username and banned_username do NOT coincide.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404': # Content not found
-          description: Either the username or the banned username have not been found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500': # Internal server error.
-          description: Internal server error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
     
     delete: 
       operationId: unbanUser
@@ -1153,5 +1106,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  
- 
+    
+    put: 
+      operationId: banUser
+      tags: ['USER', 'BAN']
+      summary: Ban a new user
+      description: |-
+        Add a new user - here, 'ban_username' - in the list of the banned users for 'username'.
+      parameters:
+        - in: query
+          name: banned_username
+          description: Username of the user that must be added to the list of the banned users for this user.
+          schema:
+            $ref: '#/components/schemas/Username'
+          required: true
+      security:
+        - BearerAuth: []
+      responses:
+        '204': # OK Created
+          description: User 'banned_username' has been successfully added to the ban list.
+        '400': # Bad request
+          description: Bad request provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401': # Unauthenticated
+          description: The client has not been authenticated (yet).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403': # Unauthorized
+          description: |-
+            The authenticated user cannot ban another user on behalf of some other user.
+            That is, the authenticated user's username and banned_username do NOT coincide.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404': # Content not found
+          description: Either the username or the banned username have not been found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500': # Internal server error.
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
