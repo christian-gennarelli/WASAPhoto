@@ -225,12 +225,18 @@ paths:
         description: Username that the authenticated user is trying to find.
         schema:
           $ref: '#/components/schemas/Username'
+      - in: header
+        name: username
+        description: Username of the user trying to display its stream.
+        schema:  
+          $ref: '#/components/schemas/Username'
+        required: true
     get:
       operationId: searchUser
       tags: ['USER']
       summary: Search for a user
       description: |-
-        A particular user can research another user - here, "researched-user" - 
+        A particular user - here, "username" - can research another user - here, "researched-user" - 
         or a set of users by their usernames matching the substring provided.
       responses:
         '200': # OK
