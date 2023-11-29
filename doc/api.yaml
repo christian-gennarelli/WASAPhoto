@@ -344,7 +344,7 @@ paths:
       
     get:
       operationId: getUserProfile
-      tags: ['PROFILE', 'USER']
+      tags: ['PROFILE']
       summary: See user profile
       description: |-
         Return all the informations about the specified user, 
@@ -379,7 +379,7 @@ paths:
     
     put:
       operationId: setMyUsername
-      tags: ['PROFILE', 'USER']
+      tags: ['PROFILE']
       summary: Update username
       description: |-
         It allows for a particular user to change its username, with a new one
@@ -455,7 +455,7 @@ paths:
     put:
       operationId: uploadPost
       summary: Upload a new post
-      tags: ['PHOTO', 'PROFILE']
+      tags: ['POST']
       description: The user can upload a new post for its own profile.
       security:
         - BearerAuth: []
@@ -526,7 +526,7 @@ paths:
   
     delete:
       operationId: deletePhoto
-      tags: ['PHOTO']
+      tags: ['POST']
       summary: Delete an already posted post
       description: |-
         Delete from the user's profile a post that it previously posted somewhen in the past.
@@ -582,9 +582,9 @@ paths:
         required: true
 
     get:
-      operationId: getPhotoLikes
-      summary: Get list of likes of a photo
-      tags: ['PHOTO']
+      operationId: getPostLikes
+      summary: Get list of likes of a post
+      tags: ['POST']
       description: |-
         Return the lists of users which liked post with id 'post_id'.
       responses:
@@ -617,9 +617,9 @@ paths:
                 $ref: '#/components/schemas/Error'
     
     put:
-      operationId: likePhoto
-      tags: ['PHOTO']
-      summary: Like a photo
+      operationId: likePost
+      tags: ['POST']
+      summary: Like a post
       description: |-
         Authenticated users can like other users' posts.
       security:
@@ -647,7 +647,7 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403': # Unauthorized
           description: |-
-            The authenticated user cannot like a photo on behalf of some other user.
+            The authenticated user cannot like a post on behalf of some other user.
             That is, the authenticated user's username and liker_username do NOT coincide.
           content:
             application/json:
@@ -687,9 +687,9 @@ paths:
         required: true
 
     delete:
-      operationId: unlikePhoto
-      tags: ['PHOTO']
-      summary: Unlike a photo
+      operationId: unlikePost
+      tags: ['POST']
+      summary: Unlike a post
       description: |-
         Delete 'liker_username' from the list of likers of 'username's post.
       security:
@@ -743,8 +743,8 @@ paths:
           $ref: '#/components/schemas/RandomID'
         required: true
     get:
-      operationId: getPhotoComments
-      tags: ['PHOTO']
+      operationId: getPostComments
+      tags: ['POST']
       summary: Get comments under a post
       description: |-
         Return the list of the comments under the post with id 'post_id' of 'username'.
@@ -775,8 +775,8 @@ paths:
                 $ref: '#/components/schemas/Error'
       
     put:
-      operationId: commentPhoto
-      tags: ['PHOTO', 'COMMENT']
+      operationId: commentPost
+      tags: ['POST']
       summary: Comment a post
       description: |-
         A new comment, with all of its properties (especially the author 
@@ -849,11 +849,11 @@ paths:
         required: true
 
     delete:
-      operationId: uncommentPhoto
+      operationId: uncommentPost
       summary: Uncomment a post
       description: |-
         The comment with id 'comment_id' under post 'post_id' of 'username' is now removed.
-      tags: ['PHOTO', 'COMMENT']
+      tags: ['POST']
       security:
         - BearerAuth: []
       responses:
@@ -901,7 +901,7 @@ paths:
 
     get:
       operationId: getFollowersList
-      tags: ['USER', 'FOLLOW']
+      tags: ['FOLLOWERS']
       summary: Get the follower list
       description: |-
         Return the list of the users following the username provided in the path.
@@ -946,7 +946,7 @@ paths:
     put: 
       operationId: followUser
       summary: Follow a new user
-      tags: ['USER', 'FOLLOW']
+      tags: ['FOLLOWING']
       description: |-
         Add a new user - here, 'following_username' - in the list of the following users for 'username'.
       security:
@@ -1002,7 +1002,7 @@ paths:
     
     delete: 
       operationId: unfollowUser
-      tags: ['USER', 'FOLLOW']
+      tags: ['FOLLOWING']
       summary: Unfollow an user
       description: |-
         Delete a user from the list of the following user.
@@ -1058,7 +1058,7 @@ paths:
     
     delete: 
       operationId: unbanUser
-      tags: ['USER']
+      tags: ['BAN']
       summary: Unban an user
       description: |-
         Delete a user - here, 'banned_username' - from the banned list of the user 'username'.
@@ -1110,7 +1110,7 @@ paths:
 
     get:
       operationId: getBanUserList
-      tags: ['USER', 'BAN']
+      tags: ['BAN']
       summary: Return user banlist.
       description: |-
         Return the list of banned users for the specified user.
@@ -1132,7 +1132,7 @@ paths:
     
     put: 
       operationId: banUser
-      tags: ['USER', 'BAN']
+      tags: ['BAN']
       summary: Ban a new user
       description: |-
         Add a new user - here, 'ban_username' - in the list of the banned users for 'username'.
