@@ -28,7 +28,8 @@ components:
         it will be generated automatically by the server.
       minLength: 64
       maxLength: 64
-      pattern: /^[a-fA-F0-9]{64}$/gm
+      type: string
+      pattern: /^[A-Z0-9]{64}$/
       example: 80C562474C114A59AACA50E8303A738CFB04B4661DAD1F98A80C5F0A78893D4D
 
     Username:
@@ -38,7 +39,7 @@ components:
       example: "chrigenna02"
       minLength: 8
       maxLength: 16
-      pattern: ^[a-zA-Z][a-zA-Z0-9_]$
+      pattern: /^[a-zA-Z0-9]([._-](?![._-])|[a-zA-Z0-9]){6,14}[a-zA-Z0-9]$/
 
     User:
       title: User
@@ -51,7 +52,7 @@ components:
           $ref: '#/components/schemas/Username'
         name:
           type: string
-          pattern: /^[a-z ,.'-]+$/i
+          pattern: /[a-zA-Z0-9]{2,32}/
           minLength: 2
           maxLength: 32
           example: Christian Gennarelli 
@@ -76,11 +77,10 @@ components:
       format: binary
       type: string
       description: |-
-        Binary representation of a photo, wrapped in a string.
-      pattern: ^[A-Za-z0-9+/=]*$
-      minLength: 1
-      maxLength: 256000000 # 32 MB photo size (in bits)
-      example: Q2lhbyBtaSBjaGlhbW8gY2hyaXN0aWFuCg==      
+        Binary representation of a photo, wrapped in a base64-encoded string. 
+      minLength: 160 # Approximately 119 B minimum photo size (encoded in base64)
+      maxLength: 44739244 # Approximately 32 MB maximum photo size (encoded in base64)
+      example: iVBORw0KGgbW8gY2hyaXN0aWFuCg
 
     Post:
       title: Post
@@ -103,7 +103,7 @@ components:
           type: string
           minLength: 0
           maxLength: 128
-          pattern: ^(.|\s)*[a-zA-Z]+(.|\s)*$
+          pattern: /^(.|\s)*[a-zA-Z]+(.|\s)*$/
 
     PostsStream:
       title: Stream
@@ -126,7 +126,7 @@ components:
           type: string
           minLength: 1
           maxLength: 128
-          pattern: ^(.|\s)*[a-zA-Z]+(.|\s)*$
+          pattern: /^(.|\s)*[a-zA-Z]+(.|\s)*$/
         creation-datetime: # Useful for the representation of the poststream, which must be displayed in reverse chronological order
           description: |-
             Date and time at which this comment was created.
@@ -165,6 +165,7 @@ components:
           example: 'Username not found. Please check that the username is correct, and try again.'
           minLength: 1
           maxLength: 128
+          pattern: /^(.|\s)*[a-zA-Z]+(.|\s)*$/
 
 paths:
   /session:
