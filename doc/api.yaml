@@ -89,10 +89,8 @@ components:
       properties:
         postid:
           $ref: '#/components/schemas/RandomID'
-          description: Unique photo identifier.
         photo: 
           $ref: '#/components/schemas/Photo'
-          description: Binary representation of the photo.
         creation-datetime: # Useful for the representation of the poststream, which must be displayed in reverse chronological order
           description: |-
             Date and time at which this post was created 
@@ -124,7 +122,6 @@ components:
       properties:
         post_id:
           $ref: '#/components/schemas/RandomID'
-          description: Identifier for the post under which the comment has been left.
         body:
           type: string
           minLength: 1
