@@ -122,11 +122,20 @@ components:
       description: |-
         Comment on a post, with the body of the comments, its author and the datetime of creation.
       properties:
+        post_id:
+          $ref: '#/components/schemas/RandomID'
+          description: Identifier for the post under which the comment has been left.
         body:
           type: string
           minLength: 1
           maxLength: 128
           pattern: ^(.|\s)*[a-zA-Z]+(.|\s)*$
+        creation-datetime: # Useful for the representation of the poststream, which must be displayed in reverse chronological order
+          description: |-
+            Date and time at which this comment was created.
+          example: "2023-11-29 23:00:00"
+          type: string
+          format: date-time
         author:
           $ref: '#/components/schemas/Username'
     
