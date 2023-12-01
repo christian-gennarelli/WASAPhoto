@@ -37,6 +37,16 @@ func (db appdbimpl) PostUserID(Username string) (ID string, err error) {
 	// If not, create a new user (and consequently a new ID for it)
 	id = uniuri.NewLen(64)
 
+	stmt, err = db.c.Prepare("INSERT INTO User (Username, ID) VALUES (?, ?)")
+	if err != nil {
+		return "", fmt.Errorf("error while preparing the SQL statement to create the new user")
+	}
+
+	_, err = stmt.Query(Username, id)
+	if err != nil {
+		return "", fmt.Errorf("error while performing the query to create the new user")
+	}
+
 	return id, nil
 
 }

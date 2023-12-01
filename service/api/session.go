@@ -16,6 +16,8 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	var username components.Username
 	err := json.NewDecoder(r.Body).Decode(&username)
 
+	w.Header().Set("Content-Type", "application/json")
+
 	// HTTP Error 400: Unacceptable
 	if err != nil {
 
@@ -26,7 +28,6 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 		ctx.Logger.WithError(err).Error(fmt.Errorf("error while parsing the username from the request body"))
 
 		// Return the error in the response body
-		w.Header().Set("Content-Type", "application/json")
 		error := components.Error{
 			ErrorCode:   400,
 			Description: "Error while parsing the username from the request body...",
@@ -38,7 +39,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 		}
 		_, err = w.Write([]byte(response))
 		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the responce body"))
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
 			return
 		}
 
@@ -50,10 +51,22 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while parsing the id for the given user"))
+		return
+	}
+
+	ID := components.ID{
+		RandID: id,
+	}
+
+	response, err := json.Marshal(ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(id))
+	w.Write([]byte(response))
 
 }
