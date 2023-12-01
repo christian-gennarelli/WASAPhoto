@@ -197,20 +197,14 @@ paths:
                 properties:
                   identifier:
                     $ref: '#/components/schemas/RandomID'
-        '406': # Not acceptable
+        '400': # Not acceptable
           description: Content not conformed to the criteria specified.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '415': # Unsupported media type.
-          description: Unsupported media type.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429': # Too many requests
-          description: Too many requests.
+        '500': # Internal server error
+          description: Internal server error.
           content:
             application/json:
               schema:
