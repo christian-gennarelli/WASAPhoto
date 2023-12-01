@@ -31,9 +31,11 @@ Then you can initialize the AppDatabase and pass it to the api package.
 package database
 
 import (
+	"bufio"
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 )
 
 // AppDatabase is the high level interface for the DB
@@ -64,6 +66,41 @@ func New(db *sql.DB) (AppDatabase, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error creating database structure: %w", err)
 		}
+	}
+
+	// Read the content of the SQL statement needed to build up the structure of the database (if not already present)
+	file, err := os.Open("database_setup.txt")
+	if err != nil {
+		fmt.Println("Error encoutered while reading the database SQL statement from the corresponding file!")
+		return nil, err
+	}
+	defer file.Close()
+
+	// What bufio.Scanner.Scan() does is to split the content of the file according in so-called tokens, which are unit of text separated by a delimiter (\n is the default one.)
+	var db_setup string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text() // bufio.Scanner.Text() return the content of the current token.
+		db_setup += line + "\n"
+	}
+
+	if scanner.Err() != nil {
+		fmt.Println("Error from the scanner!")
+		return nil, scanner.Err()
+	}
+
+	// Run the following SQL statement to build the structure of the database
+	stmt, err := db.Prepare(db_setup)
+	if err != nil {
+		fmt.Println("Error while preparing the SQL statement for preparing the database!")
+		return nil, err
+	}
+
+	// Execute the SQL statement
+	result, err := stmt.Exec()
+	if err != nil {
+		fmt.Println("Error while executing the SQL statement to prepare the database!")
+		return nil, err
 	}
 
 	return &appdbimpl{
