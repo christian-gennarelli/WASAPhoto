@@ -40,10 +40,14 @@ import (
 
 // AppDatabase is the high level interface for the DB
 type AppDatabase interface {
+
+	// Default methods
 	GetName() (string, error)
 	SetName(name string) error
-
 	Ping() error
+
+	// Custom methods
+	PostUserID(Username string) (ID string, err error)
 }
 
 type appdbimpl struct {
@@ -97,7 +101,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 	}
 
 	// Execute the SQL statement
-	result, err := stmt.Exec()
+	_, err = stmt.Exec()
 	if err != nil {
 		fmt.Println("Error while executing the SQL statement to prepare the database!")
 		return nil, err

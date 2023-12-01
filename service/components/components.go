@@ -1,17 +1,17 @@
 // Here (almost) all the schemas defined in the API are defined.
 
-package api
+package components
 
 import (
 	"time"
 )
 
 type ID struct {
-	randID string
+	RandID string
 }
 
 type Username struct {
-	uname string
+	Uname string `json:"name"`
 }
 
 type User struct {
