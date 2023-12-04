@@ -227,7 +227,7 @@ paths:
           $ref: '#/components/schemas/Username'
       - in: header
         name: username
-        description: Username of the user trying to display its stream.
+        description: Username of the user who is searching the other user.
         schema:  
           $ref: '#/components/schemas/Username'
         required: true
@@ -298,8 +298,6 @@ paths:
       operationId: getMyStream
       description: Update and display the stream of posts for the authenticated usernames.
       tags: ['STREAM']
-      security:
-        - BearerAuth: []
       responses:
         '200': # OK 
           description: Stream of posts is correctly returned to the user client.

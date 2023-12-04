@@ -36,6 +36,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
+	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
 )
 
 // AppDatabase is the high level interface for the DB
@@ -47,7 +49,9 @@ type AppDatabase interface {
 	Ping() error
 
 	// Custom methods
-	PostUserID(Username string) (ID string, err error)
+	PostUserID(Username string) (ID *components.ID, err error)
+	SearchUser(Username string) (UserList *components.UserList, err error)
+	IsValid(Username string, ID string) (Valid *bool, err error)
 }
 
 type appdbimpl struct {

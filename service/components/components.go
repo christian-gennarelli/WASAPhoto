@@ -3,6 +3,8 @@
 package components
 
 import (
+	"fmt"
+	"regexp"
 	"time"
 )
 
@@ -28,7 +30,7 @@ type User struct {
 */
 
 type UserList struct {
-	Users []ID
+	Users []Username
 }
 
 type Photo struct {
@@ -60,4 +62,21 @@ type CommentList struct {
 type Error struct {
 	ErrorCode   string
 	Description string
+}
+
+// Check if the provided username is in the correct format
+func (Username Username) CheckIfValid() (*bool, error) {
+
+	regex, err := regexp.Compile(USERNAME_REGEXP)
+	if err != nil {
+		return nil, fmt.Errorf("error encountered while compiling the regexp")
+	}
+
+	valid := true
+	if !regex.MatchString(Username.Uname) {
+		valid = false
+	}
+
+	return &valid, nil
+
 }
