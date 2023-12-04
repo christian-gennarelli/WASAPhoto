@@ -29,7 +29,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 
 		// Return the error in the response body
 		error := components.Error{
-			ErrorCode:   400,
+			ErrorCode:   "400",
 			Description: "Error while parsing the username from the request body...",
 		}
 		response, err := json.Marshal(error)
@@ -52,6 +52,22 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error(fmt.Errorf("error while parsing the id for the given user"))
+
+		error := components.Error{
+			ErrorCode:   "500",
+			Description: "Error while parsing the username from the DB...",
+		}
+		response, err := json.Marshal(error)
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(response))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+
 		return
 	}
 

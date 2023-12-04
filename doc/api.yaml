@@ -152,7 +152,7 @@ components:
         Schema defining what is an error when returned in response of a HTTP requests.
       properties:
         code: # Code returned by the server
-          type: integer
+          type: string
           description: Status code returned directly by the server(s).
           example: 404
           minLength: 3

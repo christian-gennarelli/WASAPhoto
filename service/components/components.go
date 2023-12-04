@@ -58,6 +58,6 @@ type CommentList struct {
 }
 
 type Error struct {
-	ErrorCode   int
+	ErrorCode   string
 	Description string
 }
