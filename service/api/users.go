@@ -142,6 +142,23 @@ func (rt _router) SearchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(response))
+	_, err = w.Write([]byte(response))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "Error while writing the response body in the response body",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+		return
+	}
 
 }
