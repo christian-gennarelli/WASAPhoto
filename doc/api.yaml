@@ -17,6 +17,8 @@ components:
     BearerAuth:
       type: http
       scheme: bearer
+      description: Bearer token for authentication in WASAPhoto.
+      bearerFormat: /^[A-F0-9]{64}$/i
 
   schemas:
 
@@ -86,6 +88,22 @@ components:
       minLength: 160 # Approximately 119 B minimum photo size (encoded in base64)
       maxLength: 44739244 # Approximately 32 MB maximum photo size (encoded in base64)
       example: iVBORw0KGgbW8gY2hyaXN0aWFuCg
+    
+    Profile:
+      title: Profile
+      description: |-
+        Profile of an user. It includes the user and IDs of the posts posted by such user.
+      properties:
+        user:
+          description: User of this profile.
+          $ref: "#/components/schemas/User"
+        post_ids:
+          type: array
+          description: Collection of the IDs of the post posted by the user of this profile.
+          items:
+            $ref: '#/components/schemas/RandomID'
+          minItems: 0
+          maxItems: 999
 
     Post:
       title: Post
@@ -298,6 +316,8 @@ paths:
       operationId: getMyStream
       description: Update and display the stream of posts for the authenticated usernames.
       tags: ['STREAM']
+      security:
+        - BearerAuth: []
       responses:
         '200': # OK 
           description: Stream of posts is correctly returned to the user client.

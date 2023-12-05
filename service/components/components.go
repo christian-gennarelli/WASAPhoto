@@ -23,6 +23,11 @@ type User struct {
 	BirthDate time.Time
 }
 
+type Profile struct {
+	User  User
+	Posts []ID
+}
+
 /*
 	Note: for arrays, a list of IDs is returned, not of objects.
 	Their information will be retrieved later one if needed through their IDs.
@@ -39,6 +44,7 @@ type Photo struct {
 
 type Post struct {
 	PostID           ID
+	Author           ID
 	Photo            Photo
 	CreationDatetime time.Time
 	Description      string
