@@ -21,7 +21,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
-			Description: "Error while parsing the username from the DB...",
+			Description: "Error encountered while parsing the username from the request body",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -92,16 +92,15 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 		ctx.Logger.WithError(err).Error(fmt.Errorf("error while parsing the username from the request body"))
 
 		// Return the error in the response body
-		error := components.Error{
+		error, err := json.Marshal(components.Error{
 			ErrorCode:   "400",
 			Description: "Error while parsing the username from the request body...",
-		}
-		response, err := json.Marshal(error)
+		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
 			return
 		}
-		_, err = w.Write([]byte(response))
+		_, err = w.Write([]byte(error))
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
 			return
@@ -117,16 +116,15 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error(fmt.Errorf("error while parsing the id for the given user"))
 
-		error := components.Error{
+		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
 			Description: "Error while parsing the username from the DB...",
-		}
-		response, err := json.Marshal(error)
+		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
 			return
 		}
-		_, err = w.Write([]byte(response))
+		_, err = w.Write([]byte(error))
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
 			return
@@ -138,16 +136,15 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	response, err := json.Marshal(ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		error := components.Error{
+		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
-			Description: "Error while econding the response body as JSON",
-		}
-		response, err := json.Marshal(error)
+			Description: "Error while enconding the response body as JSON",
+		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response error as JSON"))
 			return
 		}
-		_, err = w.Write([]byte(response))
+		_, err = w.Write([]byte(error))
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
 			return
@@ -156,6 +153,23 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(response))
+	_, err = w.Write([]byte(response))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "Error while writing the response body in the response body",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+		return
+	}
 
 }
