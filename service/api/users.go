@@ -10,10 +10,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func (rt _router) SearchUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	// Check if the provided username and its token are valid
-	ID := components.ID{RandID: r.Header.Get("Authorization")}
 	Username := components.Username{Uname: r.Header.Get("username")}
 
 	// Check if the provided username is valid
@@ -39,7 +37,7 @@ func (rt _router) SearchUser(w http.ResponseWriter, r *http.Request, ps httprout
 		return
 	}
 
-	if !*valid {
+	if !*valid { // Username not valid - wrong format
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.WithError(err).Error(fmt.Errorf("provided username is not valid"))
 
@@ -57,44 +55,6 @@ func (rt _router) SearchUser(w http.ResponseWriter, r *http.Request, ps httprout
 			return
 		}
 
-		return
-	}
-
-	valid, err = rt.db.IsValid(ID.RandID, Username.Uname)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: err.Error(),
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while formatting the error in JSON"))
-			return
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-			return
-		}
-		return
-
-	}
-
-	if !*valid {
-		w.WriteHeader(http.StatusUnauthorized)
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "401",
-			Description: err.Error(),
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while formatting the error in JSON"))
-			return
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-			return
-		}
 		return
 	}
 
@@ -141,7 +101,12 @@ func (rt _router) SearchUser(w http.ResponseWriter, r *http.Request, ps httprout
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	if len(response) > 0 {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusNoContent)
+	}
+
 	_, err = w.Write([]byte(response))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -160,5 +125,160 @@ func (rt _router) SearchUser(w http.ResponseWriter, r *http.Request, ps httprout
 		}
 		return
 	}
+
+}
+
+func (rt _router) getUserProfile(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+
+	Username := components.Username{Uname: ps.ByName("username")}
+
+	// Check if the provided username is valid
+	valid, err := Username.CheckIfValid()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while decoding the body of the request"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: err.Error(),
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+
+		return
+	}
+
+	if !*valid { // Username not valid - wrong format
+		w.WriteHeader(http.StatusBadRequest)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("provided username is not valid"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "400",
+			Description: "The provided username does not satisfy its associated regular expression",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+
+		return
+	}
+
+	// Check if the username actually exists or not in WASAPhoto
+	valid, err = rt.db.CheckIfUsernameExists(Username.Uname)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while checking if the username provided exists or not"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: err.Error(),
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+
+		return
+	}
+
+	if !*valid { // The provided username does not exist
+		w.WriteHeader(http.StatusNotFound)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("provided username does not exists"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "404",
+			Description: "The provided username is not registered on WASAPhoto",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+		return
+	}
+
+	profile, err := rt.db.GetUserProfile(Username.Uname)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while getting the profile of the user"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: err.Error(),
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+		return
+	}
+
+	response, err := json.Marshal(profile)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "Error while enconding the response as JSON",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write([]byte(response))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "Error while writing the response in the response body",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+		return
+	}
+
+	return
 
 }
