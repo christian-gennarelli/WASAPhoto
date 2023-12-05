@@ -39,6 +39,7 @@ func (rt *_router) Handler() http.Handler {
 
 	// Custom routes
 	rt.router.POST("/session", rt.wrap(rt.doLogin))
+	rt.router.GET("/users/", rt.wrap(rt.SearchUser))
 
 	return rt.router
 }
