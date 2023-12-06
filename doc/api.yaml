@@ -65,6 +65,8 @@ components:
           format: date
           pattern:  /([0-9]{4})-(?:[0-9]{2})-([0-9]{2})/
           example: "2002-10-01"
+          minLength: 10
+          maxLength: 10
       
     UserList:
       title: UserList
@@ -85,7 +87,7 @@ components:
         Binary representation of a photo, wrapped in a base64-encoded string. 
       minLength: 160 # Approximately 119 B minimum photo size (encoded in base64)
       maxLength: 44739244 # Approximately 32 MB maximum photo size (encoded in base64)
-      example: iVBORw0KGgbW8gY2hyaXN0aWFuCg
+      example: iVBORw0KGgbW8gY2hyaXN0aWFuCghyaXN0aWFuCgw0KGgbW8gYyaXN0aWFuCgw0KGgbW8gW8gYyaXN0aW8gYyaXN0aWFuCgw0KGGgbW8gY2hyaXN0aWFuCghy0aWFuCghyaXN0aWFuC8gY2hyaXN0aWFuCghyaXN0aWFuCgw0KGgbW8gYyaXN0aWFuCgw0KGgbW8gW8gYyaXN0
     
     Profile:
       title: Profile
@@ -205,10 +207,8 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  $ref: '#/components/schemas/Username'
+              description: Username of the user that wants to login.
+              $ref: '#/components/schemas/Username'
         required: true
       responses:
         '201':
@@ -216,10 +216,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  identifier:
-                    $ref: '#/components/schemas/RandomID'
+                $ref: '#/components/schemas/RandomID'
         '400': # Not acceptable
           description: Content not conformed to the criteria specified.
           content:
@@ -297,11 +294,12 @@ paths:
         required: true
       - in: query
         name: startDatetime
-        description: |- 
+        description: |-   
           Datetime up to which posts will be included in the user's stream.
           (The ending datetime is implicit: now! In this way, in the stream
           will be inclued all photos posted from 'startDatetime' up to now.)
         schema: 
+          description: Lower bound datetime
           type: string
           format: date-time
           pattern:  /([0-9]{4})-(?:[0-9]{2})-([0-9]{2}) ([0-9]{2}):(?:[0-9]{2}):([0-9]{2})/ /
@@ -312,6 +310,7 @@ paths:
     get:
       operationId: getMyStream
       description: Update and display the stream of posts for the authenticated usernames.
+      summary: It allows for the user to get its main stream of posts diplayed on the home page.
       tags: ['STREAM']
       security:
         - BearerAuth: []
@@ -492,6 +491,7 @@ paths:
         content:
           multipart/form-data:
             schema:
+              description: Photo and its description.
               type: object  
               properties:
                 photo:
