@@ -49,10 +49,8 @@ components:
         User of our platform, with its UUID username, real name and date of birth.
       properties:
         uuid:
-          description: Unique ID of the user
           $ref: '#/components/schemas/RandomID'
         username:
-          description: Username of the user
           $ref: '#/components/schemas/Username'
         name:
           description: Real-life name/surname of the user
@@ -95,7 +93,6 @@ components:
         Profile of an user. It includes the user and IDs of the posts posted by such user.
       properties:
         user:
-          description: User of this profile.
           $ref: "#/components/schemas/User"
         post_ids:
           type: array
@@ -629,7 +626,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserList'
-        '203': # No content found
+        '204': # No content found
           description: No users liked the post.
         '400': # Bad request
           description: Bad request provided.
@@ -947,8 +944,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserList'
-        '203': # No content found
-          description: No users follows this user.
+        '204': # No content found
+          description: No user follows this user.
         '400': # Bad request
           description: Bad request provided.
           content:
@@ -1148,6 +1145,8 @@ paths:
       summary: Return user banlist.
       description: |-
         Return the list of banned users for the specified user.
+      security:
+        - BearerAuth: []
       responses:
         '204': # OK
           description: User 'username' has now banned the user 'following_username'.
@@ -1157,8 +1156,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401': # Unauthenticated
+          description: The client has not been authenticated (yet).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403': # Unauthorized
+          description: |-
+            The authenticated user cannot see banned users of some other user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404': # Resource not found
-          description: The user who is trying to ban the second user or this latter one has not been found.
+          description: Username provided not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500': # Internal server error.
+          description: Internal server error.
           content:
             application/json:
               schema:
