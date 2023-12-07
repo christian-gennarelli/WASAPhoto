@@ -207,7 +207,6 @@ paths:
         content:
           application/json:
             schema:
-              description: Username of the user that wants to login.
               $ref: '#/components/schemas/Username'
         required: true
       responses:
@@ -378,7 +377,7 @@ paths:
             content:
               application/json:
                 schema: 
-                  $ref: '#/components/schemas/User'
+                  $ref: '#/components/schemas/Profile'
         '400': # Bad request
           description: The request cannot be processed.
           content:
