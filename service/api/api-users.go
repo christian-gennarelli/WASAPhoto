@@ -101,7 +101,7 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 		return
 	}
 
-	if len(response) > 0 {
+	if len(res.Users) > 0 {
 		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusNoContent)
