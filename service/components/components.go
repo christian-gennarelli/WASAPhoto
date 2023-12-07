@@ -75,11 +75,27 @@ func (Username Username) CheckIfValid() (*bool, error) {
 
 	regex, err := regexp.Compile(USERNAME_REGEXP)
 	if err != nil {
-		return nil, fmt.Errorf("error encountered while compiling the regexp")
+		return nil, fmt.Errorf("error encountered while compiling the regexp for checking if the provided username is valid")
 	}
 
 	valid := true
 	if !regex.MatchString(Username.Uname) {
+		valid = false
+	}
+
+	return &valid, nil
+
+}
+
+func (Id ID) CheckIfValid() (*bool, error) {
+
+	regex, err := regexp.Compile(ID_REGEXP)
+	if err != nil {
+		return nil, fmt.Errorf("error encountered while compiling the regexp for checking if the provided ID is valid")
+	}
+
+	valid := true
+	if !regex.MatchString(Id.RandID) {
 		valid = false
 	}
 

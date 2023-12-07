@@ -7,12 +7,12 @@ import (
 	"github.com/dchest/uniuri"
 )
 
-func (db appdbimpl) IsValid(Username string, ID string) (Valid *bool, err error) {
+func (db appdbimpl) CheckCombinationIsValid(Username string, ID string) (Valid *bool, err error) {
 
 	// Prepare the SQL statement to return the row containing both the provided username and id, if there is any
-	stmt, err := db.c.Prepare("SELECT COUNT(*) FROM Users WHERE Username = ? AND ID = ?")
+	stmt, err := db.c.Prepare("SELECT COUNT(*) FROM User WHERE Username = ? AND ID = ?")
 	if err != nil {
-		return nil, fmt.Errorf("error while preparing the SQL statement to obtain the list of users with the provided string as substring")
+		return nil, fmt.Errorf("error while preparing the SQL statement to check if provided combination of username and ID is correct")
 	}
 
 	// Bind the parameters and execute the statement
@@ -41,14 +41,14 @@ func (db appdbimpl) IsValid(Username string, ID string) (Valid *bool, err error)
 
 func (db appdbimpl) CheckIfUsernameExists(Username string) (*bool, error) {
 
-	stmt, err := db.c.Prepare("SELECT 1 FROM Users WHERE Username = ?")
+	stmt, err := db.c.Prepare("SELECT 1 FROM User WHERE Username = ?")
 	if err != nil {
-		return nil, fmt.Errorf("error while preparing the SQL statement to obtain the check if the provided username exists")
+		return nil, fmt.Errorf("error while preparing the SQL statement to check if the provided username exists")
 	}
 
 	rows, err := stmt.Query(Username)
 	if err != nil {
-		return nil, fmt.Errorf("error while performing the query to obtain the list of users with the provided string as substring")
+		return nil, fmt.Errorf("error while performing the query to check if the provided username exists")
 	} else {
 		defer rows.Close()
 	}
@@ -119,7 +119,7 @@ func (db appdbimpl) PostUserID(Username string) (*components.ID, error) {
 func (db appdbimpl) SearchUser(Username string) (*components.UserList, error) {
 
 	// Prepare the SQL statement for finding all the users with "uname" as substring
-	stmt, err := db.c.Prepare("SELECT Username FROM Users WHERE Username LIKE '%?%'")
+	stmt, err := db.c.Prepare("SELECT Username FROM User WHERE Username LIKE '%?%'")
 	if err != nil {
 		return nil, fmt.Errorf("error while preparing the SQL statement to obtain the list of users with the provided string as substring")
 	}
@@ -155,65 +155,9 @@ func (db appdbimpl) SearchUser(Username string) (*components.UserList, error) {
 
 }
 
-// Retrieve the profile of the user with the provided username
-func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error) {
-
-	// Retrieve the photos posted by this user
-	stmt, err := db.c.Prepare("SELECT PostID FROM Post WHERE Author = ?")
-	if err != nil {
-		return nil, fmt.Errorf("error while preparing the SQL statement to obtain the list of posts posted by the user")
-	}
-
-	postIDs, err := stmt.Query(Username)
-	if err != nil {
-		return nil, fmt.Errorf("error while performing the query to obtain the list of posts posted by the user")
-	} else {
-		defer postIDs.Close()
-	}
-
-	var Posts []components.ID
-	for postIDs.Next() {
-		var postID components.ID
-		err = postIDs.Scan(&postID)
-		if err != nil {
-			return nil, fmt.Errorf("error while extracting the username from the query")
-		}
-		Posts = append(Posts, postID)
-	}
-
-	// Retrieve the informations about the user with the provided username
-	stmt, err = db.c.Prepare("SELECT * FROM Users WHERE Username = ?")
-	if err != nil {
-		return nil, fmt.Errorf("error while preparing the SQL statement to obtain the info about the user with the provided username")
-	}
-
-	users, err := stmt.Query(Username)
-	if err != nil {
-		return nil, fmt.Errorf("error while performing the query to obtain the info about the user with the provided username")
-	} else {
-		defer postIDs.Close()
-	}
-
-	var User components.User
-	for users.Next() {
-		err = postIDs.Scan(&User)
-		if err != nil {
-			return nil, fmt.Errorf("error while extracting the username from the query")
-		}
-	}
-
-	profile := components.Profile{
-		User:  User,
-		Posts: Posts,
-	}
-
-	return &profile, nil
-
-}
-
 func (db appdbimpl) UpdateUsername(OldUsername string, NewUsername string) error {
 
-	stmt, err := db.c.Prepare("UPDATE Users SET Username = ? WHERE Username = ?")
+	stmt, err := db.c.Prepare("UPDATE User SET Username = ? WHERE Username = ?")
 	if err != nil {
 		return fmt.Errorf("error while preparing the SQL statement to updating the username")
 	}
@@ -228,5 +172,29 @@ func (db appdbimpl) UpdateUsername(OldUsername string, NewUsername string) error
 	}
 
 	return nil
+
+}
+
+func (db appdbimpl) GetUsernameByToken(Id string) (*components.Username, error) {
+
+	stmt, err := db.c.Prepare("SELECT Username FROM Users WHERE ID = ?")
+	if err != nil {
+		return nil, fmt.Errorf("error while preparing the SQL statement to retrieve the username associated to the given Auth token")
+	}
+
+	rows, err := stmt.Query(Id)
+	if err != nil {
+		return nil, fmt.Errorf("error while executing the SQL query to retrieve the username associated to the given Auth token")
+	}
+
+	var username components.Username
+	if rows.Next() { // We can be sure to have one username at most since the column token is set to be unique
+		err = rows.Scan(&username.Uname)
+		if err != nil {
+			return nil, fmt.Errorf("error while scanning the result of the SQL query to retrieve the username associated to the given Auth token")
+		}
+	}
+
+	return &username, nil
 
 }

@@ -654,12 +654,12 @@ paths:
         Authenticated users can like other users' posts.
       security:
         - BearerAuth: []
-      parameters:
-      - in: header
-        name: liker_username
-        description: Username of the authenticated user that wants to like the post of user 'username'.
-        schema:
-          $ref: '#/components/schemas/Username'
+      # parameters:
+      #- in: header
+      #  name: liker_username
+      #  description: Username of the authenticated user that wants to like the post of user 'username'.
+      #  schema:
+      #    $ref: '#/components/schemas/Username'
       responses:
         '204': # OK Created
           description: User 'liker_username' successfully liked 'username's photo.

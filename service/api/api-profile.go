@@ -257,7 +257,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	// Check if the user sending the request is authenticated
-	valid, err = rt.db.IsValid(username.Uname, token.RandID)
+	valid, err = rt.db.CheckCombinationIsValid(username.Uname, token.RandID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error(fmt.Errorf("error while checking if the user is authenticated or not"))

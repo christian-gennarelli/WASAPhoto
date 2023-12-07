@@ -49,12 +49,16 @@ type AppDatabase interface {
 	Ping() error
 
 	// Custom methods
+	GetUsernameByToken(Id string) (*components.Username, error)
 	CheckIfUsernameExists(Username string) (*bool, error)
-	IsValid(Username string, ID string) (Valid *bool, err error)
-	PostUserID(Username string) (ID *components.ID, err error)
-	SearchUser(Username string) (UserList *components.UserList, err error)
+	CheckIfPostExists(PostID string) (*bool, error)
+	CheckCombinationIsValid(Username string, ID string) (*bool, error)
+	CheckIfOwnerPost(Username string, PostID string) (*bool, error)
+	PostUserID(Username string) (*components.ID, error)
+	SearchUser(Username string) (*components.UserList, error)
 	GetUserProfile(Username string) (*components.Profile, error)
 	UpdateUsername(NewUsername string, OldUsername string) error
+	AddLikeToPost(Username string, PostID string) error
 }
 
 type appdbimpl struct {
