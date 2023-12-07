@@ -69,7 +69,7 @@ func (db appdbimpl) CheckIfUsernameExists(Username string) (*bool, error) {
 }
 
 // If the user does not exist, it will be created, and an identifier is returned. If the user exists, the user identifier is returned.
-func (db appdbimpl) PostUserID(Username string) (ID *components.ID, err error) {
+func (db appdbimpl) PostUserID(Username string) (*components.ID, error) {
 
 	// Prepare the SQL statement
 	stmt, err := db.c.Prepare("SELECT ID from User WHERE Username = ?")
@@ -86,7 +86,7 @@ func (db appdbimpl) PostUserID(Username string) (ID *components.ID, err error) {
 	}
 
 	// Check if the username already existed
-	var id components.ID
+	var id string
 
 	// If yes, just return the associated id
 	if rows.Next() {
@@ -111,7 +111,8 @@ func (db appdbimpl) PostUserID(Username string) (ID *components.ID, err error) {
 
 	}
 
-	return &id, nil
+	ID := components.ID{RandID: id}
+	return &ID, nil
 
 }
 
@@ -207,5 +208,25 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 	}
 
 	return &profile, nil
+
+}
+
+func (db appdbimpl) UpdateUsername(OldUsername string, NewUsername string) error {
+
+	stmt, err := db.c.Prepare("UPDATE Users SET Username = ? WHERE Username = ?")
+	if err != nil {
+		return fmt.Errorf("error while preparing the SQL statement to updating the username")
+	}
+
+	rows, err := stmt.Query(NewUsername, OldUsername)
+	if err != nil {
+		if err != nil {
+			return fmt.Errorf("error while performing the query to obtain the info about the user with the provided username")
+		} else {
+			defer rows.Close()
+		}
+	}
+
+	return nil
 
 }

@@ -54,6 +54,7 @@ type AppDatabase interface {
 	PostUserID(Username string) (ID *components.ID, err error)
 	SearchUser(Username string) (UserList *components.UserList, err error)
 	GetUserProfile(Username string) (*components.Profile, error)
+	UpdateUsername(NewUsername string, OldUsername string) error
 }
 
 type appdbimpl struct {
