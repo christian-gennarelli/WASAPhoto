@@ -43,7 +43,7 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "400",
-			Description: "The provided username does not satisfy its associated regular expression",
+			Description: "the provided username does not satisfy its associated regular expression",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -86,7 +86,7 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 		w.WriteHeader(http.StatusInternalServerError)
 		error := components.Error{
 			ErrorCode:   "500",
-			Description: "Error while econding the response body as JSON",
+			Description: "error while econding the response body as JSON",
 		}
 		response, err := json.Marshal(error)
 		if err != nil {
@@ -112,7 +112,7 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 		w.WriteHeader(http.StatusInternalServerError)
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
-			Description: "Error while writing the response body in the response body",
+			Description: "error while writing the response body in the response body",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error as JSON"))

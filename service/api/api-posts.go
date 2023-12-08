@@ -206,7 +206,7 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
-			Description: "The provided Auth token does not satisfy its associated regular expression",
+			Description: "the provided Auth token does not satisfy its associated regular expression",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -229,7 +229,7 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
-			Description: "There was an error while trying to fetch the username associated with the given token from the DB",
+			Description: "error while trying to fetch the username associated with the given token from the DB",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -250,7 +250,7 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "400",
-			Description: "There exists no username associated with the provided Auth token.",
+			Description: "no username associated with the provided Auth token",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -296,7 +296,7 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "400",
-			Description: "The provided username does not own the given post",
+			Description: "provided username does not own the given post",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -318,7 +318,7 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "400",
-			Description: "The provided username does not coincide with the liker_username provided in the path",
+			Description: "provided username does not coincide with the liker_username provided in the path",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))

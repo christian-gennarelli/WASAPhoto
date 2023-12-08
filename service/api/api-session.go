@@ -65,7 +65,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "400",
-			Description: "The provided username does not satisfy its associated regular expression",
+			Description: "the provided username does not satisfy its associated regular expression",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -138,7 +138,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 		w.WriteHeader(http.StatusInternalServerError)
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
-			Description: "Error while enconding the response body as JSON",
+			Description: "error while enconding the response body as JSON",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response error as JSON"))
@@ -158,7 +158,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 		w.WriteHeader(http.StatusInternalServerError)
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
-			Description: "Error while writing the response body in the response body",
+			Description: "error while writing the response body in the response body",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error as JSON"))

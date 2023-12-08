@@ -43,7 +43,7 @@ func (rt _router) getUserProfile(w http.ResponseWriter, r *http.Request, ps http
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "400",
-			Description: "The provided username does not satisfy its associated regular expression",
+			Description: "provided username does not satisfy its associated regular expression",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -87,7 +87,7 @@ func (rt _router) getUserProfile(w http.ResponseWriter, r *http.Request, ps http
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "404",
-			Description: "The provided username is not registered on WASAPhoto",
+			Description: "provided username is not registered on WASAPhoto",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -127,7 +127,7 @@ func (rt _router) getUserProfile(w http.ResponseWriter, r *http.Request, ps http
 		w.WriteHeader(http.StatusInternalServerError)
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
-			Description: "Error while enconding the response as JSON",
+			Description: "error while enconding the response as JSON",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error as JSON"))
@@ -147,7 +147,7 @@ func (rt _router) getUserProfile(w http.ResponseWriter, r *http.Request, ps http
 		w.WriteHeader(http.StatusInternalServerError)
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
-			Description: "Error while writing the response in the response body",
+			Description: "error while writing the response in the response body",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error as JSON"))
@@ -198,7 +198,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "400",
-			Description: "The provided username does not satisfy its associated regular expression",
+			Description: "provided username does not satisfy its associated regular expression",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -242,7 +242,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "404",
-			Description: "The provided username is not registered on WASAPhoto",
+			Description: "provided username is not registered on WASAPhoto",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -285,7 +285,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "401",
-			Description: "The provided username is not registered on WASAPhoto",
+			Description: "provided username is not registered on WASAPhoto",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -308,7 +308,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
-			Description: "Error encountered while parsing the username from the request body",
+			Description: "error while parsing the username from the request body",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -352,7 +352,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "400",
-			Description: "The provided username is not in a valid format.",
+			Description: "provided username is not in a valid format",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -394,7 +394,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 		w.WriteHeader(http.StatusInternalServerError)
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
-			Description: "Error while enconding the response as JSON",
+			Description: "error while enconding the response as JSON",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error as JSON"))
@@ -414,7 +414,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 		w.WriteHeader(http.StatusInternalServerError)
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
-			Description: "Error while writing the response",
+			Description: "error while writing the response",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error as JSON"))
