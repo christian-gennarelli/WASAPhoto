@@ -60,6 +60,7 @@ type AppDatabase interface {
 	UpdateUsername(NewUsername string, OldUsername string) error
 	AddLikeToPost(Username string, PostID string) error
 	RemoveLikeFromPost(Username string, PostID string) error
+	AddCommentToPost(PostID string, Body string, CreationDatetime string, Author string) error
 }
 
 type appdbimpl struct {

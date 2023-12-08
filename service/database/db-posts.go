@@ -1,6 +1,10 @@
 package database
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/dchest/uniuri"
+)
 
 func (db appdbimpl) CheckIfPostExists(PostID string) (*bool, error) {
 
@@ -88,6 +92,25 @@ func (db appdbimpl) RemoveLikeFromPost(Username string, PostID string) error {
 	_, err = stmt.Query(PostID, Username)
 	if err != nil {
 		return fmt.Errorf("error while executing the query to add the like")
+	}
+
+	return nil
+
+}
+
+func (db appdbimpl) AddCommentToPost(PostID string, Body string, CreationDatetime string, Author string) error {
+
+	stmt, err := db.c.Prepare("INSERT INTO Comment (CommentID, PostID, Author, CreationDatetime, Comment) VALUES (?, ?, ?, CONVERT(DATETIME, ?), ?)")
+	if err != nil {
+		return fmt.Errorf("error while preparing the SQL statement to add the comment")
+	}
+
+	// Generate the comment id
+	commentID := uniuri.NewLen(64)
+
+	_, err = stmt.Exec(commentID, PostID, Author, CreationDatetime, Body)
+	if err != nil {
+		return fmt.Errorf("error while executing the query to add the comment")
 	}
 
 	return nil

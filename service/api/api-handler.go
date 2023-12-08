@@ -44,6 +44,7 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.PUT("/users/:username/profile/", rt.wrap(rt.setMyUserName))
 	rt.router.PUT("/users/:username/profile/posts/:post_id/likes/", rt.wrap(rt.likePhoto))
 	rt.router.PUT("/users/:username/profile/posts/:post_id/likes/:liker_username", rt.wrap(rt.unlikePhoto))
+	rt.router.POST("/users/:username/profile/posts/:post_id/comments/", rt.wrap(rt.commentPhoto))
 
 	return rt.router
 }
