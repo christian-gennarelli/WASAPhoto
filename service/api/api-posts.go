@@ -86,7 +86,7 @@ func (rt _router) likePhoto(w http.ResponseWriter, r *http.Request, ps httproute
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "400",
-			Description: "There exists no username associated with the provided Auth token.",
+			Description: "no username associated with the provided Auth token.",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
@@ -132,7 +132,7 @@ func (rt _router) likePhoto(w http.ResponseWriter, r *http.Request, ps httproute
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "400",
-			Description: "The provided username does not own the given post",
+			Description: "provided username does not own the given post",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
