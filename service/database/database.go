@@ -59,6 +59,7 @@ type AppDatabase interface {
 	GetUserProfile(Username string) (*components.Profile, error)
 	UpdateUsername(NewUsername string, OldUsername string) error
 	AddLikeToPost(Username string, PostID string) error
+	RemoveLikeFromPost(Username string, PostID string) error
 }
 
 type appdbimpl struct {

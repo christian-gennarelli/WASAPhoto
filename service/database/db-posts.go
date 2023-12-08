@@ -77,3 +77,19 @@ func (db appdbimpl) AddLikeToPost(Username string, PostID string) error {
 	return nil
 
 }
+
+func (db appdbimpl) RemoveLikeFromPost(Username string, PostID string) error {
+
+	stmt, err := db.c.Prepare("DELETE FROM Like WHERE PostID = ? AND Liker = ?  ")
+	if err != nil {
+		return fmt.Errorf("error while preparing the SQL statement to add the like")
+	}
+
+	_, err = stmt.Query(PostID, Username)
+	if err != nil {
+		return fmt.Errorf("error while executing the query to add the like")
+	}
+
+	return nil
+
+}
