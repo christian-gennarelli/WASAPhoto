@@ -198,3 +198,27 @@ func (db appdbimpl) GetUsernameByToken(Id string) (*components.Username, error) 
 	return &username, nil
 
 }
+
+func (db appdbimpl) GetOwnerUsernameOfComment(Id string) (*components.Username, error) {
+
+	stmt, err := db.c.Prepare("SELECT Author FROM Comment WHERE CommentID = ?")
+	if err != nil {
+		return nil, fmt.Errorf("error while preparing the SQL statement to retrieve the author of the provided comment")
+	}
+
+	rows, err := stmt.Query(Id)
+	if err != nil {
+		return nil, fmt.Errorf("error while executing the SQL query to retrieve the author of the provided comment")
+	}
+
+	var username components.Username
+	if rows.Next() { // We can be sure to have one username at most since the column 'CommentID' is set to be unique
+		err = rows.Scan(&username.Uname)
+		if err != nil {
+			return nil, fmt.Errorf("error while scanning the result of the SQL query to retrieve the author of the provided comment")
+		}
+	}
+
+	return &username, nil
+
+}

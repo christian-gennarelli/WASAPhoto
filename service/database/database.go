@@ -61,6 +61,8 @@ type AppDatabase interface {
 	AddLikeToPost(Username string, PostID string) error
 	RemoveLikeFromPost(Username string, PostID string) error
 	AddCommentToPost(PostID string, Body string, CreationDatetime string, Author string) error
+	RemoveCommentFromPost(PostID string, CommentID string) error
+	GetOwnerUsernameOfComment(CommentID string) (*components.Username, error)
 }
 
 type appdbimpl struct {

@@ -545,3 +545,190 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	w.WriteHeader(http.StatusNoContent)
 
 }
+
+func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+	// Retrieve the Auth token and check if is valid
+	token := components.ID{RandID: r.Header.Get("Authorization")}
+	valid, err := token.CheckIfValid()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while checking if the provided Auth token is valid or not"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: err.Error(),
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+
+		return
+	}
+
+	if *valid {
+		w.WriteHeader(http.StatusBadRequest)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("provided Auth token is not valid"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "provided Auth token does not satisfy its associated regular expression",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+
+		return
+	}
+
+	// Retrieve the username associated to the given Auth token
+	username, err := rt.db.GetUsernameByToken(token.RandID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error encountered while getting the username associated with the given token from the DB"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "error while trying to fetch the username associated with the given token from the DB",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+
+		return
+	}
+
+	// Check if there exists an user registered with such token
+	if len(username.Uname) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "400",
+			Description: "no username associated with the provided Auth token.",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+
+		return
+	}
+
+	// Retrieve the id of the post the user wants to like and the username of the user who should own it
+	ownerUsername := components.Username{Uname: ps.ByName("username")}
+	postID := components.ID{RandID: ps.ByName("post_id")}
+
+	valid, err = rt.db.CheckIfOwnerPost(ownerUsername.Uname, postID.RandID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error encountered while checking if the given post is owned by the provided user"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: err.Error(),
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+
+		return
+	}
+
+	if !*valid {
+		w.WriteHeader(http.StatusBadRequest)
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "400",
+			Description: "provided username does not own the given post",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+
+		return
+	}
+
+	// Retrieve the id of the comment from the path
+	commentID := components.ID{RandID: ps.ByName("post_id")}
+
+	// Check if the authenticated user is the owner of the post
+	ownerUsernameComment, err := rt.db.GetOwnerUsernameOfComment(commentID.RandID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error encountered while checking if the given comment is owned by the provided user"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: err.Error(),
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+
+		return
+	}
+
+	if ownerUsernameComment.Uname != username.Uname {
+		w.WriteHeader(http.StatusBadRequest)
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "400",
+			Description: "provided username does not own the given comment",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			return
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			return
+		}
+
+		return
+	}
+
+	// Delete the comment under the given post
+	err = rt.db.RemoveCommentFromPost(postID.RandID, commentID.RandID)
+
+}

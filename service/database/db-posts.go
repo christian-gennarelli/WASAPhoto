@@ -31,22 +31,6 @@ func (db appdbimpl) CheckIfPostExists(PostID string) (*bool, error) {
 
 func (db appdbimpl) CheckIfOwnerPost(Username string, PostID string) (*bool, error) {
 
-	valid, err := db.CheckIfUsernameExists(Username)
-	if err != nil {
-		return nil, err
-	}
-	if !*valid {
-		return nil, fmt.Errorf("the provided username does not exist")
-	}
-
-	valid, err = db.CheckIfPostExists(PostID)
-	if err != nil {
-		return nil, err
-	}
-	if !*valid {
-		return nil, fmt.Errorf("the provided post does not exist")
-	}
-
 	stmt, err := db.c.Prepare("SELECT 1 FROM User U JOIN Post P ON U.Username = P.Author WHERE U.Username = ? AND P.PostID = ?")
 	if err != nil {
 		return nil, fmt.Errorf("error while preparing the SQL statement to check if the given post is owned by the given user")
@@ -57,12 +41,12 @@ func (db appdbimpl) CheckIfOwnerPost(Username string, PostID string) (*bool, err
 		return nil, fmt.Errorf("error while executing the SQL query to retrieve the username associated to the given Auth token")
 	}
 
-	*valid = true
+	valid := true
 	if !rows.Next() {
-		*valid = false
+		valid = false
 	}
 
-	return valid, nil
+	return &valid, nil
 
 }
 
@@ -111,6 +95,22 @@ func (db appdbimpl) AddCommentToPost(PostID string, Body string, CreationDatetim
 	_, err = stmt.Exec(commentID, PostID, Author, CreationDatetime, Body)
 	if err != nil {
 		return fmt.Errorf("error while executing the query to add the comment")
+	}
+
+	return nil
+
+}
+
+func (db appdbimpl) RemoveCommentFromPost(PostID string, CommentID string) error {
+
+	stmt, err := db.c.Prepare("DELETE FROM Comment WHERE PostID = ? AND CommentID = ?")
+	if err != nil {
+		return fmt.Errorf("error while preparing the SQL statement to remove the comment")
+	}
+
+	_, err = stmt.Exec(PostID, CommentID)
+	if err != nil {
+		return fmt.Errorf("error while executing the query to remove the comment")
 	}
 
 	return nil
