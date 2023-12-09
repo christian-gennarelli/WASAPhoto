@@ -52,6 +52,7 @@ type AppDatabase interface {
 	GetUsernameByToken(Id string) (*components.Username, error)
 	CheckIfUsernameExists(Username string) (*bool, error)
 	CheckIfPostExists(PostID string) (*bool, error)
+	CheckIfCommentExists(CommentID string) (*bool, error)
 	CheckCombinationIsValid(Username string, ID string) (*bool, error)
 	CheckIfOwnerPost(Username string, PostID string) (*bool, error)
 	PostUserID(Username string) (*components.ID, error)

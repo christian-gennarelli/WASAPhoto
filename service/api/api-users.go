@@ -12,71 +12,87 @@ import (
 
 func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	Username := components.Username{Uname: r.Header.Get("username")}
+	w.Header().Set("Content-Type", "application/json")
 
-	// Check if the provided username is valid
-	valid, err := Username.CheckIfValid()
+	// Parse the string we want to match in usernames
+	var searchedUsername components.Username
+
+	err := json.NewDecoder(r.Body).Decode(&searchedUsername)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error(fmt.Errorf("error while decoding the body of the request"))
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
-			Description: err.Error(),
+			Description: "error while decoding the body of the request",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-			return
 		}
 		_, err = w.Write([]byte(error))
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-			return
 		}
 
 		return
 	}
 
-	if !*valid { // Username not valid - wrong format
+	// Check if the provided username is valid
+	valid, err := searchedUsername.CheckIfValid()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while checking if the provided username is valid"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "error while checking if the provided username is valid",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+
+		return
+	}
+
+	if !*valid { // Username not valid
 		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("provided username is not valid"))
+		ctx.Logger.WithError(err).Error(fmt.Errorf("provided username not valid"))
 
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "400",
-			Description: "the provided username does not satisfy its associated regular expression",
+			Description: "provided username not valid",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-			return
 		}
 		_, err = w.Write([]byte(error))
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-			return
 		}
 
 		return
 	}
 
-	// Parse the string we want to match in usernames
-	searchedUsername := r.URL.Query().Get("searched-username")
-
-	// Execute the query to the database
-	res, err := rt.db.SearchUser(searchedUsername)
+	// Search the users
+	res, err := rt.db.SearchUser(searchedUsername.Uname)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while searching the users with the provided username as substring"))
+
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
-			Description: err.Error(),
+			Description: "error while searching the users with the provided username as substring",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while formatting the error in JSON"))
-			return
 		}
 		_, err = w.Write([]byte(error))
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-			return
 		}
 		return
 	}
@@ -84,19 +100,19 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	response, err := json.Marshal(res)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response body as JSON"))
+
 		error := components.Error{
 			ErrorCode:   "500",
-			Description: "error while econding the response body as JSON",
+			Description: "error while encoding the response body as JSON",
 		}
 		response, err := json.Marshal(error)
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response error as JSON"))
-			return
 		}
 		_, err = w.Write([]byte(response))
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-			return
 		}
 		return
 	}
@@ -110,18 +126,18 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	_, err = w.Write([]byte(response))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response body in the response body"))
+
 		error, err := json.Marshal(components.Error{
 			ErrorCode:   "500",
 			Description: "error while writing the response body in the response body",
 		})
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error as JSON"))
-			return
 		}
 		_, err = w.Write([]byte(error))
 		if err != nil {
 			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-			return
 		}
 		return
 	}

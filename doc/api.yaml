@@ -236,12 +236,6 @@ paths:
         description: Username that the authenticated user is trying to find.
         schema:
           $ref: '#/components/schemas/Username'
-      - in: header
-        name: username
-        description: Username of the user who is searching the other user.
-        schema:  
-          $ref: '#/components/schemas/Username'
-        required: true
     get:
       operationId: searchUser
       tags: ['USER']

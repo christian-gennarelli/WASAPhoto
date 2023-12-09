@@ -29,6 +29,29 @@ func (db appdbimpl) CheckIfPostExists(PostID string) (*bool, error) {
 
 }
 
+func (db appdbimpl) CheckIfCommentExists(CommentID string) (*bool, error) {
+
+	stmt, err := db.c.Prepare("SELECT 1 FROM Comment WHERE CommentID = ?")
+	if err != nil {
+		return nil, fmt.Errorf("error while preparing the SQL statement for checking if the provided comment exists")
+	}
+
+	rows, err := stmt.Query(CommentID)
+	if err != nil {
+		return nil, fmt.Errorf("error while performing the query for checking if the provided comment exists")
+	} else {
+		defer rows.Close()
+	}
+
+	valid := true
+	if !rows.Next() {
+		valid = false
+	}
+
+	return &valid, nil
+
+}
+
 func (db appdbimpl) CheckIfOwnerPost(Username string, PostID string) (*bool, error) {
 
 	stmt, err := db.c.Prepare("SELECT 1 FROM User U JOIN Post P ON U.Username = P.Author WHERE U.Username = ? AND P.PostID = ?")
