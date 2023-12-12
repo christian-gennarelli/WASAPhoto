@@ -37,15 +37,25 @@ func (rt *_router) Handler() http.Handler {
 	// Special routes
 	rt.router.GET("/liveness", rt.liveness)
 
-	// Custom routes
+	// Session routes
 	rt.router.POST("/session", rt.wrap(rt.doLogin))
+
+	// User routes
 	rt.router.GET("/users/", rt.wrap(rt.searchUser))
+
+	// Profile routes
 	rt.router.GET("/users/:username/profile/", rt.wrap(rt.getUserProfile))
 	rt.router.PUT("/users/:username/profile/", rt.wrap(rt.setMyUserName))
+
+	// Post routes
 	rt.router.PUT("/users/:username/profile/posts/:post_id/likes/", rt.wrap(rt.likePhoto))
 	rt.router.PUT("/users/:username/profile/posts/:post_id/likes/:liker_username", rt.wrap(rt.unlikePhoto))
 	rt.router.POST("/users/:username/profile/posts/:post_id/comments/", rt.wrap(rt.commentPhoto))
 	rt.router.POST("/users/:username/profile/posts/:post_id/comments/:comment_id", rt.wrap(rt.uncommentPhoto))
+
+	// Following routes
+	rt.router.GET("/users/:username/following", rt.wrap(rt.followUser))
+	rt.router.GET("/users/:username/following", rt.wrap(rt.unfollowUser))
 
 	return rt.router
 }

@@ -48,22 +48,30 @@ type AppDatabase interface {
 	SetName(name string) error
 	Ping() error
 
-	// Custom methods
-	GetUsernameByToken(Id string) (*components.Username, error)
-	CheckIfUsernameExists(Username string) (*bool, error)
-	CheckIfPostExists(PostID string) (*bool, error)
-	CheckIfCommentExists(CommentID string) (*bool, error)
+	// User queries
 	CheckCombinationIsValid(Username string, ID string) (*bool, error)
-	CheckIfOwnerPost(Username string, PostID string) (*bool, error)
+	CheckIfUsernameExists(Username string) (*bool, error)
+	GetUsernameByToken(Id string) (*components.Username, error)
+	GetOwnerUsernameOfComment(CommentID string) (*components.Username, error)
 	PostUserID(Username string) (*components.ID, error)
 	SearchUser(Username string) (*components.UserList, error)
-	GetUserProfile(Username string) (*components.Profile, error)
 	UpdateUsername(NewUsername string, OldUsername string) error
+
+	// Post queries
+	CheckIfPostExists(PostID string) (*bool, error)
+	CheckIfCommentExists(CommentID string) (*bool, error)
+	CheckIfOwnerPost(Username string, PostID string) (*bool, error)
 	AddLikeToPost(Username string, PostID string) error
 	RemoveLikeFromPost(Username string, PostID string) error
 	AddCommentToPost(PostID string, Body string, CreationDatetime string, Author string) error
 	RemoveCommentFromPost(PostID string, CommentID string) error
-	GetOwnerUsernameOfComment(CommentID string) (*components.Username, error)
+
+	// Profile queries
+	GetUserProfile(Username string) (*components.Profile, error)
+
+	// Following queries
+	FollowUser(followerUsername string, followingUsername string) error
+	UnfollowUser(followerUsername string, followingUsername string) error
 }
 
 type appdbimpl struct {
