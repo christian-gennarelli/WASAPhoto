@@ -38,42 +38,8 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	// Check if the provided username is valid
-	valid, err := searchedUsername.CheckIfValid()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error while checking if the provided username is valid"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while checking if the provided username is valid",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
-		return
-	}
-
-	if !*valid { // Username not valid
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("provided username not valid"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "400",
-			Description: "provided username not valid",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
+	valid := searchedUsername.CheckIfValid(w, r, ps, ctx)
+	if !*valid {
 		return
 	}
 

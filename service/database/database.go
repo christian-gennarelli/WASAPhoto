@@ -35,9 +35,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 
+	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
+	"github.com/julienschmidt/httprouter"
 )
 
 // AppDatabase is the high level interface for the DB
@@ -49,25 +52,25 @@ type AppDatabase interface {
 	Ping() error
 
 	// User queries
-	CheckCombinationIsValid(Username string, ID string) (*bool, error)
-	CheckIfUsernameExists(Username string) (*bool, error)
-	GetUsernameByToken(Id string) (*components.Username, error)
-	GetOwnerUsernameOfComment(CommentID string) (*components.Username, error)
+	CheckCombinationIsValid(Username string, ID string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *bool
+	CheckIfUsernameExists(Username string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *bool
+	GetUsernameByToken(Id string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *components.Username
+	GetOwnerUsernameOfComment(CommentID string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *components.Username
 	PostUserID(Username string) (*components.ID, error)
 	SearchUser(Username string) (*components.UserList, error)
 	UpdateUsername(NewUsername string, OldUsername string) error
 
 	// Post queries
-	CheckIfPostExists(PostID string) (*bool, error)
-	CheckIfCommentExists(CommentID string) (*bool, error)
-	CheckIfOwnerPost(Username string, PostID string) (*bool, error)
+	CheckIfPostExists(PostID string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *bool
+	CheckIfCommentExists(CommentID string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *bool
+	CheckIfOwnerPost(Username string, PostID string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *bool
 	AddLikeToPost(Username string, PostID string) error
 	RemoveLikeFromPost(Username string, PostID string) error
 	AddCommentToPost(PostID string, Body string, CreationDatetime string, Author string) error
 	RemoveCommentFromPost(PostID string, CommentID string) error
 
 	// Profile queries
-	GetUserProfile(Username string) (*components.Profile, error)
+	GetUserProfile(Username string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *components.Profile
 
 	// Following queries
 	FollowUser(followerUsername string, followingUsername string) error

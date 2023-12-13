@@ -17,100 +17,20 @@ func (rt _router) getUserProfile(w http.ResponseWriter, r *http.Request, ps http
 	// Retrieve the username and check if it is valid
 	username := components.Username{Uname: ps.ByName("username")}
 
-	valid, err := username.CheckIfValid()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error while decoding the body of the request"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while decoding the body of the request",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-		return
-	}
-
-	if !*valid { // Username not valid
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("provided username not valid"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "400",
-			Description: "provided username not valid",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
+	valid := username.CheckIfValid(w, r, ps, ctx)
+	if !*valid {
 		return
 	}
 
 	// Check if the username actually exists or not in WASAPhoto
-	valid, err = rt.db.CheckIfUsernameExists(username.Uname)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error while checking if the username provided exists or not"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while checking if the username provided exists or not",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
-		return
-	}
-
-	if !*valid { // The provided username does not exist
-		w.WriteHeader(http.StatusNotFound)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("provided username does not exist"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "404",
-			Description: "provided username not registered on WASAPhoto",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
+	valid = rt.db.CheckIfUsernameExists(username.Uname, w, r, ps, ctx)
+	if !*valid {
 		return
 	}
 
 	// Retrieve the profile of the user with the given username
-	profile, err := rt.db.GetUserProfile(username.Uname)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error while getting the profile of the user"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while getting the profile of the user",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
+	profile := rt.db.GetUserProfile(username.Uname, w, r, ps, ctx)
+	if profile == nil {
 		return
 	}
 
@@ -165,123 +85,20 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	username := components.Username{Uname: ps.ByName("username")}
 
 	// Check if the provided username is valid
-	valid, err := username.CheckIfValid()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error while checking if the username is valid"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while checking if the username is valid",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
-		return
-	}
-
-	if !*valid { // Username not valid
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("provided username not valid"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "400",
-			Description: "provided username not valid",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
+	valid := username.CheckIfValid(w, r, ps, ctx)
+	if !*valid {
 		return
 	}
 
 	// Check if the provided Auth token is valid
-	valid, err = token.CheckIfValid()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error while checking if the provided Auth token is valid or not"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while checking if the provided Auth token is valid or not",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-	}
-
-	if *valid { // Auth token not valid
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.Error(fmt.Errorf("provided Auth token not valid"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "400",
-			Description: "provided Auth token not valid",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
+	valid = token.CheckIfValid(w, r, ps, ctx)
+	if !*valid {
 		return
 	}
 
 	// Retrieve the username associated to the given Auth token
-	usernameAuth, err := rt.db.GetUsernameByToken(token.RandID)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error encountered while getting the username associated with the given token from the DB"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error encountered while getting the username associated with the given token from the DB",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-			return
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-			return
-		}
-
-		return
-	}
-
-	// Check if there exists an user registered with such token
-	if len(usernameAuth.Uname) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.Error(fmt.Errorf("no username associated with the provided Auth token"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "400",
-			Description: "no username associated with the provided Auth token",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
+	usernameAuth := rt.db.GetUsernameByToken(token.RandID, w, r, ps, ctx)
+	if usernameAuth == nil {
 		return
 	}
 
@@ -306,7 +123,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 
 	// Retrieve the new username from the request body
 	var new_username components.Username
-	err = json.NewDecoder(r.Body).Decode(&new_username)
+	err := json.NewDecoder(r.Body).Decode(&new_username)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error(fmt.Errorf("error while decoding the body of the request"))
@@ -327,41 +144,8 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	// Check if the provided username is valid or not
-	valid, err = new_username.CheckIfValid()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error while checking if the new username provided is valid or not"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while checking if the new username provided is valid or not",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
-		return
-	}
-
-	if !*valid { // new_username not valid
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("provided username not valid"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "400",
-			Description: "provided username not valid",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
+	valid = new_username.CheckIfValid(w, r, ps, ctx)
+	if !*valid {
 		return
 	}
 

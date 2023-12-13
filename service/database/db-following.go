@@ -20,7 +20,7 @@ func (db appdbimpl) FollowUser(followerUsername string, followingUsername string
 
 func (db appdbimpl) UnfollowUser(followerUsername string, followingUsername string) error {
 
-	stmt, err := db.c.Prepare("DELETE FROM Follow WHERE  Follower = ? AND ?)")
+	stmt, err := db.c.Prepare("DELETE FROM Follow WHERE Follower = ? AND Following = ?)")
 	if err != nil {
 		return fmt.Errorf("error while preparing the SQL statement to remove followerUsername from the list of followers of followingUsername")
 	}

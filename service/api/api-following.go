@@ -10,134 +10,20 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func helperAuthFollowing(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router) (*components.Username, *components.Username) {
+func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router) *components.Username {
 
 	// Retrieve the Auth token and check if is valid
 	token := components.ID{RandID: r.Header.Get("Authorization")}
 
-	valid, err := token.CheckIfValid()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error while checking if the provided Auth token is valid or not"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while checking if the provided Auth token is valid or not",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
-		return nil, nil
-
-	}
-
-	if !*valid { // Auth token not valid
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.Error(fmt.Errorf("provided Auth token not valid"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "400",
-			Description: "provided Auth token not valid",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
-		return nil, nil
+	valid := token.CheckIfValid(w, r, ps, ctx)
+	if !*valid {
+		return nil
 	}
 
 	// Retrieve the username associated to the given Auth token and check if there exists an user registered with such token
-	followerUsername, err := rt.db.GetUsernameByToken(token.RandID)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error encountered while getting the username associated with the given token from the DB"))
+	username := rt.db.GetUsernameByToken(token.RandID, w, r, ps, ctx)
 
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error encountered while getting the username associated with the given token from the DB",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
-		return nil, nil
-	}
-
-	if len(followerUsername.Uname) == 0 { // No username associated with the provided token
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.Error(fmt.Errorf("no username associated with the provided Auth token"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "400",
-			Description: "no username associated with the provided Auth token",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
-		return nil, nil
-	}
-
-	// Retrieve the username from the path and check if it is valid
-	followingUsername := components.Username{Uname: ps.ByName("username")}
-
-	valid, err = followingUsername.CheckIfValid()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error while checking if the given username is valid"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while checking if the given username is valid",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
-		return nil, nil
-	}
-
-	if !*valid { // Username not valid
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("provided username not valid"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "400",
-			Description: "provided username not valid",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
-		return nil, nil
-	}
-
-	return followerUsername, &followingUsername
+	return username // nil if not found
 
 }
 
@@ -145,8 +31,15 @@ func (rt _router) followUser(w http.ResponseWriter, r *http.Request, ps httprout
 
 	w.Header().Set("Content-Type", "application/json")
 
-	followerUsername, followingUsername := helperAuthFollowing(w, r, ps, ctx, rt)
-	if followerUsername == nil || followingUsername == nil {
+	followerUsername := helperAuth(w, r, ps, ctx, rt)
+	if followerUsername == nil {
+		return
+	}
+
+	// Retrieve the username from the path and check if it is valid
+	followingUsername := components.Username{Uname: ps.ByName("username")}
+	valid := followingUsername.CheckIfValid(w, r, ps, ctx)
+	if !*valid {
 		return
 	}
 
@@ -179,13 +72,40 @@ func (rt _router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpro
 
 	w.Header().Set("Content-Type", "application/json")
 
-	followerUsername, followingUsername := helperAuthFollowing(w, r, ps, ctx, rt)
-	if followerUsername == nil || followingUsername == nil {
+	followerUsername := helperAuth(w, r, ps, ctx, rt)
+	if followerUsername == nil {
+		return
+	}
+
+	// Retrieve the username from the path and check if it is valid
+	var followingUsername components.Username
+	err := json.NewDecoder(r.Body).Decode(&followingUsername)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while decoding the body of the request"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "error while decoding the body of the request",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+
+		return
+	}
+
+	valid := followingUsername.CheckIfValid(w, r, ps, ctx)
+	if !*valid {
 		return
 	}
 
 	// Add the authenticated username to the list of users following the username provided in the path
-	err := rt.db.UnfollowUser(followerUsername.Uname, followingUsername.Uname)
+	err = rt.db.UnfollowUser(followerUsername.Uname, followingUsername.Uname)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error(fmt.Errorf("error while unfollowing the username"))

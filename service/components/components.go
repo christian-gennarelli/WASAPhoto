@@ -3,9 +3,14 @@
 package components
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"time"
+
+	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
+	"github.com/julienschmidt/httprouter"
 )
 
 type ID struct {
@@ -71,34 +76,100 @@ type Error struct {
 }
 
 // Check if the provided username is in the correct format
-func (Username Username) CheckIfValid() (*bool, error) {
+func (Username Username) CheckIfValid(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *bool {
+
+	valid := false
 
 	regex, err := regexp.Compile(USERNAME_REGEXP)
 	if err != nil {
-		return nil, fmt.Errorf("error encountered while compiling the regexp for checking if the provided username is valid")
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while compiling the regex for checking the validity of the provided username"))
+
+		error, err := json.Marshal(Error{
+			ErrorCode:   "500",
+			Description: "error while compiling the regex for checking the validity of the provided username",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+
+		return &valid
 	}
 
-	valid := true
-	if !regex.MatchString(Username.Uname) {
-		valid = false
+	valid = regex.MatchString(Username.Uname)
+
+	if !valid { // Username not valid
+		w.WriteHeader(http.StatusBadRequest)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("provided username not valid"))
+
+		error, err := json.Marshal(Error{
+			ErrorCode:   "400",
+			Description: "provided username not valid",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+
+		return &valid
 	}
 
-	return &valid, nil
+	return &valid
 
 }
 
-func (Id ID) CheckIfValid() (*bool, error) {
+func (Id ID) CheckIfValid(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *bool {
+
+	valid := false
 
 	regex, err := regexp.Compile(ID_REGEXP)
 	if err != nil {
-		return nil, fmt.Errorf("error encountered while compiling the regexp for checking if the provided ID is valid")
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while compiling the regex for checking the validity of the provided ID"))
+
+		error, err := json.Marshal(Error{
+			ErrorCode:   "500",
+			Description: "error while compiling the regex for checking the validity of the provided ID",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+
+		return &valid
 	}
 
-	valid := true
-	if !regex.MatchString(Id.RandID) {
-		valid = false
+	valid = regex.MatchString(Id.RandID)
+
+	if !valid { // Auth token not valid
+		w.WriteHeader(http.StatusBadRequest)
+		ctx.Logger.Error(fmt.Errorf("provided Auth token not valid"))
+
+		error, err := json.Marshal(Error{
+			ErrorCode:   "400",
+			Description: "provided Auth token not valid",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+
+		return &valid
 	}
 
-	return &valid, nil
+	return &valid
 
 }

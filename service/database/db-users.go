@@ -1,70 +1,166 @@
 package database
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 
+	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
 	"github.com/dchest/uniuri"
+	"github.com/julienschmidt/httprouter"
 )
 
-func (db appdbimpl) CheckCombinationIsValid(Username string, ID string) (Valid *bool, err error) {
+func (db appdbimpl) CheckCombinationIsValid(Username string, ID string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *bool {
+
+	valid := false
 
 	// Prepare the SQL statement to return the row containing both the provided username and id, if there is any
 	stmt, err := db.c.Prepare("SELECT COUNT(*) FROM User WHERE Username = ? AND ID = ?")
 	if err != nil {
-		return nil, fmt.Errorf("error while preparing the SQL statement to check if provided combination of username and ID is correct")
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while preparing the SQL statement to check if provided combination of username and ID is correct"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "error while preparing the SQL statement to check if provided combination of username and ID is correct",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+
+		return &valid
 	}
 
 	// Bind the parameters and execute the statement
 	rows, err := stmt.Query(Username, ID)
 	if err != nil {
-		return nil, fmt.Errorf("error while performing the query to obtain the list of users with the provided string as substring")
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while executing the SQL statement to check if provided combination of username and ID is correct"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "error while executing the SQL statement to check if provided combination of username and ID is correct",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+		return &valid
+
 	} else {
 		defer rows.Close()
 	}
 
 	// Check if the returned value is exactly 1: if yes, then the user is valid
-	valid := false
 	if rows.Next() {
 		var numRows string
 		err := rows.Scan(&numRows)
 		if err != nil {
-			return nil, fmt.Errorf("error while parsing the number of rows where username and id coincides with the ones provided")
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while parsing the number of rows where username and id coincides with the ones provided"))
+
+			error, err := json.Marshal(components.Error{
+				ErrorCode:   "500",
+				Description: "error while parsing the number of rows where username and id coincides with the ones provided",
+			})
+			if err != nil {
+				ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			}
+			_, err = w.Write([]byte(error))
+			if err != nil {
+				ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			}
+			return &valid
+
 		} else {
 			valid = numRows == "1"
 		}
 	}
 
-	return &valid, nil
+	return &valid
 
 }
 
-func (db appdbimpl) CheckIfUsernameExists(Username string) (*bool, error) {
+func (db appdbimpl) CheckIfUsernameExists(Username string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *bool {
+
+	valid := false
 
 	stmt, err := db.c.Prepare("SELECT 1 FROM User WHERE Username = ?")
 	if err != nil {
-		return nil, fmt.Errorf("error while preparing the SQL statement to check if the provided username exists")
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while preparing the query to check if the username provided exists or not"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "error while preparing the query to check if the username provided exists or not",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+
+		return &valid
 	}
 
 	rows, err := stmt.Query(Username)
 	if err != nil {
-		return nil, fmt.Errorf("error while performing the query to check if the provided username exists")
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while executing the query to check if the username provided exists or not"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "error while executing the query to check if the username provided exists or not",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+
+		return &valid
 	} else {
 		defer rows.Close()
 	}
 
-	valid := false
 	if rows.Next() {
 		var result string
 		err := rows.Scan(&result)
 		if err != nil {
-			return nil, fmt.Errorf("error while parsing the number of rows where username and id coincides with the ones provided")
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while parsing the number of rows where username and id coincides with the ones provided"))
+
+			error, err := json.Marshal(components.Error{
+				ErrorCode:   "500",
+				Description: "error while parsing the number of rows where username and id coincides with the ones provided",
+			})
+			if err != nil {
+				ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			}
+			_, err = w.Write([]byte(error))
+			if err != nil {
+				ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			}
+
+			return &valid
 		} else {
 			valid = result == "1"
 		}
 	}
 
-	return &valid, nil
+	return &valid
 
 }
 
@@ -175,50 +271,159 @@ func (db appdbimpl) UpdateUsername(OldUsername string, NewUsername string) error
 
 }
 
-func (db appdbimpl) GetUsernameByToken(Id string) (*components.Username, error) {
+func (db appdbimpl) GetUsernameByToken(Id string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *components.Username {
 
 	stmt, err := db.c.Prepare("SELECT Username FROM Users WHERE ID = ?")
 	if err != nil {
-		return nil, fmt.Errorf("error while preparing the SQL statement to retrieve the username associated to the given Auth token")
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error encountered while preparing the query to retrieve the username associated with the given token"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "error encountered while preparing the query to retrieve the username associated with the given token",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+
+		return nil
 	}
 
 	rows, err := stmt.Query(Id)
 	if err != nil {
-		return nil, fmt.Errorf("error while executing the SQL query to retrieve the username associated to the given Auth token")
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error encountered while executing the query to retrieve the username associated with the given token"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "error encountered while executing the query to retrieve the username associated with the given token",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+
+		return nil
 	}
 
 	var username components.Username
 	if rows.Next() { // We can be sure to have one username at most since the column token is set to be unique
 		err = rows.Scan(&username.Uname)
 		if err != nil {
-			return nil, fmt.Errorf("error while scanning the result of the SQL query to retrieve the username associated to the given Auth token")
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error encountered while scanning the username associated with the given token from the returned rows"))
+
+			error, err := json.Marshal(components.Error{
+				ErrorCode:   "500",
+				Description: "error encountered while scanning the username associated with the given token from the returned rows",
+			})
+			if err != nil {
+				ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			}
+			_, err = w.Write([]byte(error))
+			if err != nil {
+				ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			}
+
+			return nil
 		}
 	}
 
-	return &username, nil
+	if len(username.Uname) == 0 { // No username associated with the provided token
+		w.WriteHeader(http.StatusBadRequest)
+		ctx.Logger.Error(fmt.Errorf("no username associated with the provided Auth token"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "400",
+			Description: "no username associated with the provided Auth token",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+
+		return nil
+	}
+
+	return &username
 
 }
 
-func (db appdbimpl) GetOwnerUsernameOfComment(Id string) (*components.Username, error) {
+func (db appdbimpl) GetOwnerUsernameOfComment(Id string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *components.Username {
 
 	stmt, err := db.c.Prepare("SELECT Author FROM Comment WHERE CommentID = ?")
 	if err != nil {
-		return nil, fmt.Errorf("error while preparing the SQL statement to retrieve the author of the provided comment")
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while preparing the SQL statement to retrieve the author of the provided comment"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "error while preparing the SQL statement to retrieve the author of the provided comment",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+
+		return nil
 	}
 
 	rows, err := stmt.Query(Id)
 	if err != nil {
-		return nil, fmt.Errorf("error while executing the SQL query to retrieve the author of the provided comment")
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error(fmt.Errorf("error while executing the SQL statement to retrieve the author of the provided comment"))
+
+		error, err := json.Marshal(components.Error{
+			ErrorCode:   "500",
+			Description: "error while executing the SQL statement to retrieve the author of the provided comment",
+		})
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		}
+		_, err = w.Write([]byte(error))
+		if err != nil {
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		}
+
+		return nil
 	}
 
 	var username components.Username
 	if rows.Next() { // We can be sure to have one username at most since the column 'CommentID' is set to be unique
 		err = rows.Scan(&username.Uname)
 		if err != nil {
-			return nil, fmt.Errorf("error while scanning the result of the SQL query to retrieve the author of the provided comment")
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error(fmt.Errorf("error while scanning the result of the SQL query to retrieve the author of the provided comment"))
+
+			error, err := json.Marshal(components.Error{
+				ErrorCode:   "500",
+				Description: "error while scanning the result of the SQL query to retrieve the author of the provided comment",
+			})
+			if err != nil {
+				ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+			}
+			_, err = w.Write([]byte(error))
+			if err != nil {
+				ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+			}
+
+			return nil
 		}
 	}
 
-	return &username, nil
+	return &username
 
 }
