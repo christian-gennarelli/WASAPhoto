@@ -20,90 +20,63 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	err := json.NewDecoder(r.Body).Decode(&searchedUsername)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error while decoding the body of the request"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while decoding the body of the request",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		ctx.Logger.WithError(err).Error("error while decoding the body of the request")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
 		return
 	}
 
 	// Check if the provided username is valid
-	valid := searchedUsername.CheckIfValid(w, r, ps, ctx)
+	valid, err := searchedUsername.CheckIfValid()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
+		}
+		return
+	}
 	if !*valid {
+		w.WriteHeader(http.StatusBadRequest)
+		ctx.Logger.Error("provided username not valid")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
+		}
 		return
 	}
 
 	// Search the users
-	res, err := rt.db.SearchUser(searchedUsername.Uname)
+	users, err := rt.db.SearchUser(searchedUsername.Uname)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error while searching the users with the provided username as substring"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while searching the users with the provided username as substring",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while formatting the error in JSON"))
+		ctx.Logger.WithError(err).Error("error while searching the users with the provided username as substring")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+	}
+
+	response, err := json.Marshal(users)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while encoding the response body as JSON")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return
 	}
 
-	response, err := json.Marshal(res)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response body as JSON"))
-
-		error := components.Error{
-			ErrorCode:   "500",
-			Description: "error while encoding the response body as JSON",
-		}
-		response, err := json.Marshal(error)
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response error as JSON"))
-		}
-		_, err = w.Write([]byte(response))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-		return
-	}
-
-	if len(res.Users) > 0 {
+	if len(users.Users) > 0 {
 		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusNoContent)
 	}
 
-	_, err = w.Write([]byte(response))
-	if err != nil {
+	if _, err = w.Write(response); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response body in the response body"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while writing the response body in the response body",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error as JSON"))
-		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
+		ctx.Logger.WithError(err).Error("error while writing the response body in the response body")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return
 	}

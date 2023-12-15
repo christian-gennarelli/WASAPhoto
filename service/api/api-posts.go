@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -19,45 +20,16 @@ func (rt _router) likePhoto(w http.ResponseWriter, r *http.Request, ps httproute
 		return
 	}
 
-	// Retrieve the id of the post the user wants to like and check if it exists
-	postID := components.ID{RandID: ps.ByName("post_id")}
-
-	valid := rt.db.CheckIfPostExists(postID.RandID, w, r, ps, ctx)
-	if !*valid {
-		return
-	}
-
-	// Retrieve the username from the path and check if it is valid
-	ownerUsername := components.Username{Uname: ps.ByName("username")}
-	valid = ownerUsername.CheckIfValid(w, r, ps, ctx)
-	if !*valid {
-		return
-	}
-
-	// Check if the username in the path is the owner of the given post
-	valid = rt.db.CheckIfOwnerPost(ownerUsername.Uname, postID.RandID, w, r, ps, ctx)
-	if !*valid {
-		return
-	}
+	_, postID := helperPost(w, r, ps, ctx, rt)
 
 	// Add the username of the authenticated user to the list of likes of the post
 	err := rt.db.AddLikeToPost(username.Uname, postID.RandID)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error encountered while adding the like to the post"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error encountered while adding the like to the post",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		w.WriteHeader(http.StatusBadRequest)
+		ctx.Logger.WithError(err).Error("error encountered while adding the like to the post")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, err).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
 		return
 	}
 
@@ -74,151 +46,89 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
-	// Retrieve the id of the post the user wants to like and check if it is valid
-	postID := components.ID{RandID: ps.ByName("post_id")}
-
-	valid := rt.db.CheckIfPostExists(postID.RandID, w, r, ps, ctx)
-	if !*valid {
-		return
-	}
-
-	// Retrieve the username from the path and check if it is valid
-	ownerUsername := components.Username{Uname: ps.ByName("username")}
-
-	valid = ownerUsername.CheckIfValid(w, r, ps, ctx)
-	if !*valid {
-		return
-	}
-
-	// Check if the username from the path owns the given post
-	valid = rt.db.CheckIfOwnerPost(ownerUsername.Uname, postID.RandID, w, r, ps, ctx)
-	if !*valid {
-		return
-	}
+	_, postID := helperPost(w, r, ps, ctx, rt)
 
 	// Check if the username associated with the Auth token and the liker_username provided in the path are the same
 	liker_username := components.Username{Uname: ps.ByName("liker_username")}
-
-	valid = liker_username.CheckIfValid(w, r, ps, ctx)
+	valid, err := liker_username.CheckIfValid()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
+		}
+		return
+	}
 	if !*valid {
+		w.WriteHeader(http.StatusBadRequest)
+		ctx.Logger.WithError(err).Error("provided username not valid")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
+		}
 		return
 	}
 
 	if liker_username.Uname != username.Uname {
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.Error(fmt.Errorf("provided username does not coincide with the liker_username provided in the path"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "400",
-			Description: "provided username does not coincide with the liker_username provided in the path",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		w.WriteHeader(http.StatusUnauthorized)
+		ctx.Logger.WithError(err).Error("authenticated user cannot like another photo on behalf of another user")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "authenticated user cannot like another photo on behalf of another user").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
 		return
 	}
 
 	// Remove the like from the post
-	err := rt.db.RemoveLikeFromPost(liker_username.Uname, postID.RandID)
+	err = rt.db.RemoveLikeFromPost(liker_username.Uname, postID.RandID)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error encountered while removing the like from the post"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error encountered while removing the like from the post",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		w.WriteHeader(http.StatusBadRequest)
+		ctx.Logger.WithError(err).Error("error encountered while removing the like to the post")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, err).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-
 }
 
 func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
 	w.Header().Set("Content-Type", "application/json")
+	if contentType := r.Header.Get("Content-Type"); contentType != "application/json" {
+		w.WriteHeader(http.StatusUnsupportedMediaType)
+		ctx.Logger.Error("unsupported media type provided")
+		if _, err := w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "Invalid Content-Type. Only application/json is supported").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
 
 	username := helperAuth(w, r, ps, ctx, rt)
 	if username == nil {
 		return
 	}
 
-	// Retrieve the id of the post the user wants to like and check if it exists
-	postID := components.ID{RandID: ps.ByName("post_id")}
-
-	valid := rt.db.CheckIfPostExists(postID.RandID, w, r, ps, ctx)
-	if !*valid {
-		return
-	}
-
-	// Retrieve the username from the path and check if it is valid
-	ownerUsername := components.Username{Uname: ps.ByName("username")}
-
-	valid = ownerUsername.CheckIfValid(w, r, ps, ctx)
-	if !*valid {
-		return
-	}
-
-	// Check if the username in the path is the owner of the given post
-	valid = rt.db.CheckIfOwnerPost(ownerUsername.Uname, postID.RandID, w, r, ps, ctx)
-	if !*valid {
-		return
-	}
+	_, postID := helperPost(w, r, ps, ctx, rt)
 
 	// Retrieve the comment from the request body
 	var comment components.Comment
-	err := json.NewDecoder(r.Body).Decode(&comment)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&comment); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error encountered while decoding the comment from the request body"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while decoding the comment from the request body",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		ctx.Logger.WithError(err).Error("error encountered while decoding the comment from the request body")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
 		return
 	}
 
 	// Add the comment to the post
-	err = rt.db.AddCommentToPost(postID.RandID, comment.Body, comment.CreationDatetime.Format("2006-01-02T15:04:05"), username.Uname)
+	err := rt.db.AddCommentToPost(postID.RandID, comment.Body, comment.CreationDatetime.Format("2006-01-02T15:04:05"), username.Uname)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error encountered while adding the comment to the post"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while adding the comment to the post",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		ctx.Logger.WithError(err).Error("error while adding the comment to the post")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
 		return
 	}
 
@@ -233,84 +143,64 @@ func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps http
 	// Retrieve the Auth token and check if is valid
 	username := helperAuth(w, r, ps, ctx, rt)
 
-	// Retrieve the id of the post the user wants to like and check if it exists
-	postID := components.ID{RandID: ps.ByName("post_id")}
-
-	valid := rt.db.CheckIfPostExists(postID.RandID, w, r, ps, ctx)
-	if !*valid {
-		return
-	}
-
-	// Retrieve the username from the path and check if it is valid
-	ownerUsername := components.Username{Uname: ps.ByName("username")}
-
-	valid = ownerUsername.CheckIfValid(w, r, ps, ctx)
-	if !*valid {
-		return
-	}
-
-	// Check if the username in the path is the owner of the given post
-	valid = rt.db.CheckIfOwnerPost(ownerUsername.Uname, postID.RandID, w, r, ps, ctx)
-	if !*valid {
-		return
-	}
+	_, postID := helperPost(w, r, ps, ctx, rt)
 
 	// Retrieve the id of the comment from the path and check if it is valid
 	commentID := components.ID{RandID: ps.ByName("comment_id")}
-
-	valid = commentID.CheckIfValid(w, r, ps, ctx)
-	if !*valid {
+	valid, err := commentID.CheckIfValid()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while checking if the comment is valid")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
+		}
 		return
 	}
-
-	// Check if the given comment exists
-	valid = rt.db.CheckIfCommentExists(commentID.RandID, w, r, ps, ctx)
 	if !*valid {
+		w.WriteHeader(http.StatusBadRequest)
+		ctx.Logger.WithError(err).Error("provided comment not valid")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided comment not valid").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
+		}
 		return
 	}
 
 	// Retrieve the owner of the comment, and check if the authenticated user is the owner of the comment
-	ownerUsernameComment := rt.db.GetOwnerUsernameOfComment(commentID.RandID, w, r, ps, ctx)
-	if ownerUsernameComment == nil {
+	ownerUsernameComment, err := rt.db.GetOwnerUsernameOfComment(commentID.RandID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			ctx.Logger.WithError(err).Error("provided comment does not exists")
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "provided comment does not exists").Error())); err != nil {
+				ctx.Logger.WithError(err).Error("error while writing the response")
+			}
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while getting the owner of the given comment")
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+				ctx.Logger.WithError(err).Error("errow while writing the response")
+			}
+		}
 		return
 	}
 
 	if ownerUsernameComment.Uname != username.Uname { // Authenticated user not owner of the comment
-		w.WriteHeader(http.StatusBadRequest)
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "400",
-			Description: "provided username does not own the given comment",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		w.WriteHeader(http.StatusUnauthorized)
+		ctx.Logger.WithError(err).Error("authenticated user cannot uncomment a photo on behalf of another user")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "authenticated user cannot uncomment a photo on behalf of another user").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
 		return
 	}
 
 	// Delete the comment under the given post
-	err := rt.db.RemoveCommentFromPost(postID.RandID, commentID.RandID)
+	err = rt.db.RemoveCommentFromPost(postID.RandID, commentID.RandID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error(fmt.Errorf("error while removing the comment from the post"))
-
-		error, err := json.Marshal(components.Error{
-			ErrorCode:   "500",
-			Description: "error while removing the comment from the post",
-		})
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while encoding the response as JSON"))
+		ctx.Logger.WithError(err).Error("error while removing the comment from the post")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
-		_, err = w.Write([]byte(error))
-		if err != nil {
-			ctx.Logger.WithError(err).Error(fmt.Errorf("error while writing the response error in the response body"))
-		}
-
 		return
 	}
 

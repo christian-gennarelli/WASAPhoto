@@ -1,6 +1,8 @@
 package database
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func (db appdbimpl) FollowUser(followerUsername string, followingUsername string) error {
 
@@ -9,8 +11,7 @@ func (db appdbimpl) FollowUser(followerUsername string, followingUsername string
 		return fmt.Errorf("error while preparing the SQL statement to add followerUsername to the list of followers of followingUsername")
 	}
 
-	_, err = stmt.Query(followerUsername, followingUsername)
-	if err != nil {
+	if _, err = stmt.Exec(followerUsername, followingUsername); err != nil {
 		return fmt.Errorf("error while executing the SQL statement to add followerUsername to the list of followers of followingUsername")
 	}
 
@@ -25,8 +26,7 @@ func (db appdbimpl) UnfollowUser(followerUsername string, followingUsername stri
 		return fmt.Errorf("error while preparing the SQL statement to remove followerUsername from the list of followers of followingUsername")
 	}
 
-	_, err = stmt.Query(followerUsername, followingUsername)
-	if err != nil {
+	if _, err = stmt.Exec(followerUsername, followingUsername); err != nil {
 		return fmt.Errorf("error while executing the SQL statement to remove followerUsername from the list of followers of followingUsername")
 	}
 

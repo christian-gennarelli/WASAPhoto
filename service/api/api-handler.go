@@ -49,13 +49,13 @@ func (rt *_router) Handler() http.Handler {
 
 	// Post routes
 	rt.router.PUT("/users/:username/profile/posts/:post_id/likes/", rt.wrap(rt.likePhoto))
-	rt.router.PUT("/users/:username/profile/posts/:post_id/likes/:liker_username", rt.wrap(rt.unlikePhoto))
+	rt.router.DELETE("/users/:username/profile/posts/:post_id/likes/:liker_username", rt.wrap(rt.unlikePhoto))
 	rt.router.POST("/users/:username/profile/posts/:post_id/comments/", rt.wrap(rt.commentPhoto))
-	rt.router.POST("/users/:username/profile/posts/:post_id/comments/:comment_id", rt.wrap(rt.uncommentPhoto))
+	rt.router.DELETE("/users/:username/profile/posts/:post_id/comments/:comment_id", rt.wrap(rt.uncommentPhoto))
 
 	// Following routes
-	rt.router.GET("/users/:username/following", rt.wrap(rt.followUser))
-	rt.router.GET("/users/:username/following", rt.wrap(rt.unfollowUser))
+	rt.router.PUT("/users/:username/following", rt.wrap(rt.followUser))
+	rt.router.DELETE("/users/:username/following", rt.wrap(rt.unfollowUser))
 
 	return rt.router
 }

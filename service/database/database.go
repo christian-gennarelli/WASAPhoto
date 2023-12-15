@@ -31,16 +31,11 @@ Then you can initialize the AppDatabase and pass it to the api package.
 package database
 
 import (
-	"bufio"
 	"database/sql"
 	"errors"
 	"fmt"
-	"net/http"
-	"os"
 
-	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
-	"github.com/julienschmidt/httprouter"
 )
 
 // AppDatabase is the high level interface for the DB
@@ -52,25 +47,22 @@ type AppDatabase interface {
 	Ping() error
 
 	// User queries
-	CheckCombinationIsValid(Username string, ID string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *bool
-	CheckIfUsernameExists(Username string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *bool
-	GetUsernameByToken(Id string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *components.Username
-	GetOwnerUsernameOfComment(CommentID string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *components.Username
+	GetUsernameByToken(Id string) (*components.Username, error)
+	GetOwnerUsernameOfComment(CommentID string) (*components.Username, error)
 	PostUserID(Username string) (*components.ID, error)
 	SearchUser(Username string) (*components.UserList, error)
 	UpdateUsername(NewUsername string, OldUsername string) error
 
 	// Post queries
-	CheckIfPostExists(PostID string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *bool
-	CheckIfCommentExists(CommentID string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *bool
-	CheckIfOwnerPost(Username string, PostID string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *bool
+	CheckIfPostExists(PostID string) error
+	CheckIfOwnerPost(Username string, PostID string) error
 	AddLikeToPost(Username string, PostID string) error
 	RemoveLikeFromPost(Username string, PostID string) error
 	AddCommentToPost(PostID string, Body string, CreationDatetime string, Author string) error
 	RemoveCommentFromPost(PostID string, CommentID string) error
 
 	// Profile queries
-	GetUserProfile(Username string, w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) *components.Profile
+	GetUserProfile(Username string) (*components.Profile, error)
 
 	// Following queries
 	FollowUser(followerUsername string, followingUsername string) error
@@ -99,38 +91,48 @@ func New(db *sql.DB) (AppDatabase, error) {
 		}
 	}
 
-	// Read the content of the SQL statement needed to build up the structure of the database (if not already present)
-	file, err := os.Open("database_setup.txt")
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS User (
+		Username STRING PRIMARY KEY NOT NULL ,
+		ID STRING UNIQUE NOT NULL
+	);
+	CREATE TABLE IF NOT EXISTS Post (
+		PostID VARCHAR(64) PRIMARY KEY,
+		Author VARCHAR(16) UNIQUE NOT NULL,
+		CreationDatetime DATETIME,
+		Description VARCHAR(128),
+		FOREIGN KEY (Author) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
+	);
+	CREATE TABLE IF NOT EXISTS Like (
+		PostID VARCHAR(64),
+		Liker VARCHAR(16),
+		PRIMARY KEY (PostID, Liker),
+		FOREIGN KEY (PostID) REFERENCES Post(PostID), 
+		FOREIGN KEY (Liker) REFERENCES User(Token) ON DELETE CASCADE ON UPDATE CASCADE
+	);
+	CREATE TABLE IF NOT EXISTS Follow (
+		Follower VARCHAR(16) NOT NULL,
+		Following VARCHAR(16) NOT NULL,
+		PRIMARY KEY (Follower, Following),
+		FOREIGN KEY (Following) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE,
+		FOREIGN KEY (Following) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
+	);
+	CREATE TABLE IF NOT EXISTS Comment (
+		CommentID VARCHAR(64) PRIMARY KEY,
+		PostID VARCHAR(64) NOT NULL,
+		Author VARCHAR(16) UNIQUE NOT NULL,
+		CreationDatetime DATETIME,
+		Comment VARCHAR(128),
+		FOREIGN KEY (Author) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
+	);
+	CREATE TABLE IF NOT EXISTS Ban (
+		Banner VARCHAR(16),
+		Banned VARCHAR(16),
+		PRIMARY KEY (Banner, Banned),
+		FOREIGN KEY (Banned) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE,
+		FOREIGN KEY (Banned) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
+	);`)
+
 	if err != nil {
-		fmt.Println("Error encoutered while reading the database SQL statement from the corresponding file!")
-		return nil, err
-	}
-	defer file.Close()
-
-	// What bufio.Scanner.Scan() does is to split the content of the file according in so-called tokens, which are unit of text separated by a delimiter (\n is the default one.)
-	var db_setup string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text() // bufio.Scanner.Text() return the content of the current token.
-		db_setup += line + "\n"
-	}
-
-	if scanner.Err() != nil {
-		fmt.Println("Error from the scanner!")
-		return nil, scanner.Err()
-	}
-
-	// Run the following SQL statement to build the structure of the database
-	stmt, err := db.Prepare(db_setup)
-	if err != nil {
-		fmt.Println("Error while preparing the SQL statement for preparing the database!")
-		return nil, err
-	}
-
-	// Execute the SQL statement
-	_, err = stmt.Exec()
-	if err != nil {
-		fmt.Println("Error while executing the SQL statement to prepare the database!")
 		return nil, err
 	}
 
