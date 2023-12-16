@@ -9,7 +9,7 @@ import (
 )
 
 type ID struct {
-	RandID string
+	Value string
 }
 
 type Username struct {
@@ -89,7 +89,7 @@ func (Id ID) CheckIfValid() (*bool, error) {
 		return nil, fmt.Errorf("error while compiling the regex for checking the validity of the provided ID")
 	}
 
-	valid := regex.MatchString(Id.RandID)
+	valid := regex.MatchString(Id.Value)
 	return &valid, nil
 
 }

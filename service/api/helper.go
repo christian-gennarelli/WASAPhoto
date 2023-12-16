@@ -13,7 +13,7 @@ import (
 func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router) *components.Username {
 
 	// Retrieve the Auth token and check if is valid
-	token := components.ID{RandID: r.Header.Get("Authorization")}
+	token := components.ID{Value: r.Header.Get("Authorization")}
 	valid, err := token.CheckIfValid()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -27,7 +27,7 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 	// Retrieve the username (if valid) associated to the given Auth token and check if there exists an user registered with such token
 	var username *components.Username
 	if *valid {
-		username, err = rt.db.GetUsernameByToken(token.RandID)
+		username, err = rt.db.GetUsernameByToken(token.Value)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				w.WriteHeader(http.StatusNotFound)
@@ -59,7 +59,7 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 
 func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router) (*components.Username, *components.ID) {
 	// Retrieve the id of the post the user wants to like and check if it exists
-	postID := components.ID{RandID: ps.ByName("post_id")}
+	postID := components.ID{Value: ps.ByName("post_id")}
 	valid, err := postID.CheckIfValid()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -78,7 +78,7 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 		return nil, nil
 	}
 
-	if err = rt.db.CheckIfPostExists(postID.RandID); err != nil {
+	if err = rt.db.CheckIfPostExists(postID.Value); err != nil {
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
 			ctx.Logger.WithError(err).Error("provided post does not exist")
@@ -116,7 +116,7 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 	}
 
 	// Check if the username in the path is the owner of the given post
-	err = rt.db.CheckIfOwnerPost(ownerUsername.Uname, postID.RandID)
+	err = rt.db.CheckIfOwnerPost(ownerUsername.Uname, postID.Value)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)

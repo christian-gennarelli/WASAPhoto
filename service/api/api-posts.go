@@ -23,7 +23,7 @@ func (rt _router) likePhoto(w http.ResponseWriter, r *http.Request, ps httproute
 	_, postID := helperPost(w, r, ps, ctx, rt)
 
 	// Add the username of the authenticated user to the list of likes of the post
-	err := rt.db.AddLikeToPost(username.Uname, postID.RandID)
+	err := rt.db.AddLikeToPost(username.Uname, postID.Value)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.WithError(err).Error("error encountered while adding the like to the post")
@@ -78,7 +78,7 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Remove the like from the post
-	err = rt.db.RemoveLikeFromPost(liker_username.Uname, postID.RandID)
+	err = rt.db.RemoveLikeFromPost(liker_username.Uname, postID.Value)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.WithError(err).Error("error encountered while removing the like to the post")
@@ -122,7 +122,7 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	// Add the comment to the post
-	err := rt.db.AddCommentToPost(postID.RandID, comment.Body, comment.CreationDatetime.Format("2006-01-02T15:04:05"), username.Uname)
+	err := rt.db.AddCommentToPost(postID.Value, comment.Body, comment.CreationDatetime.Format("2006-01-02T15:04:05"), username.Uname)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while adding the comment to the post")
@@ -146,7 +146,7 @@ func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps http
 	_, postID := helperPost(w, r, ps, ctx, rt)
 
 	// Retrieve the id of the comment from the path and check if it is valid
-	commentID := components.ID{RandID: ps.ByName("comment_id")}
+	commentID := components.ID{Value: ps.ByName("comment_id")}
 	valid, err := commentID.CheckIfValid()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -166,7 +166,7 @@ func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// Retrieve the owner of the comment, and check if the authenticated user is the owner of the comment
-	ownerUsernameComment, err := rt.db.GetOwnerUsernameOfComment(commentID.RandID)
+	ownerUsernameComment, err := rt.db.GetOwnerUsernameOfComment(commentID.Value)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
@@ -194,7 +194,7 @@ func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// Delete the comment under the given post
-	err = rt.db.RemoveCommentFromPost(postID.RandID, commentID.RandID)
+	err = rt.db.RemoveCommentFromPost(postID.Value, commentID.Value)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while removing the comment from the post")

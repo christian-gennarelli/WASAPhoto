@@ -23,21 +23,21 @@ func (db appdbimpl) PostUserID(Username string) (*components.ID, error) {
 	err = stmt.QueryRow(Username).Scan(&id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ID.RandID = uniuri.NewLen(64)
+			ID.Value = uniuri.NewLen(64)
 
 			stmt, err = db.c.Prepare("INSERT INTO User (Username, ID, Birthdate) VALUES (?, ?, ?)")
 			if err != nil {
-				return nil, fmt.Errorf("error while preparing the SQL statement to create the new user")
+				return nil, err //fmt.Errorf("error while preparing the SQL statement to create the new user")
 			}
 
-			if _, err = stmt.Exec(Username, ID.RandID, "2023-12-15"); err != nil {
-				return nil, fmt.Errorf("error while performing the query to create the new user")
+			if _, err = stmt.Exec(Username, ID.Value, "2023-12-16"); err != nil {
+				return nil, err //fmt.Errorf("error while performing the query to create the new user")
 			}
 		} else {
-			return nil, fmt.Errorf("error while performing the query to obtain the id for the given user (if it exists)")
+			return nil, err //fmt.Errorf("error while performing the query to obtain the id for the given user (if it exists)")
 		}
 	} else {
-		ID.RandID = id
+		ID.Value = id
 	}
 
 	return &ID, nil
