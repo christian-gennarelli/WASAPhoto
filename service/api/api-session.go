@@ -28,7 +28,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while decoding the body of the request")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while decoding the body of the request" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("erroe while writing the response")
 		}
 		return
@@ -39,7 +39,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return
@@ -58,7 +58,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while parsing the id for the given user")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while parsing the id for the given user" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
@@ -68,7 +68,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while enconding the response body as JSON")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while enconding the response body as JSON" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
@@ -80,7 +80,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	if _, err = w.Write([]byte(response)); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while writing the response body in the response body")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while writing the response body in the response body" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return

@@ -21,8 +21,8 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while decoding the body of the request")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while decoding the body of the request" /*err*/).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
@@ -32,8 +32,8 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
@@ -41,7 +41,7 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.Error("provided username not valid")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
@@ -51,8 +51,8 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while searching the users with the provided username as substring")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while searching the users with the provided username as substring" /*err*/).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 	}
 
@@ -60,8 +60,8 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while encoding the response body as JSON")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while encoding the response body as JSON" /*err*/).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
@@ -75,8 +75,8 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	if _, err = w.Write(response); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while writing the response body in the response body")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while writing the response body in the response body" /*err*/).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}

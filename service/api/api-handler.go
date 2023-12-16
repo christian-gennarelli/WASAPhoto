@@ -44,8 +44,8 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.GET("/users/", rt.wrap(rt.searchUser))
 
 	// Profile routes
-	rt.router.GET("/users/:username/profile/", rt.wrap(rt.getUserProfile))
-	rt.router.PUT("/users/:username/profile/", rt.wrap(rt.setMyUserName))
+	rt.router.GET("/users/:username/profile", rt.wrap(rt.getUserProfile))
+	rt.router.PUT("/users/:username/profile", rt.wrap(rt.setMyUserName))
 
 	// Post routes
 	rt.router.PUT("/users/:username/profile/posts/:post_id/likes/", rt.wrap(rt.likePhoto))
@@ -54,8 +54,8 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.DELETE("/users/:username/profile/posts/:post_id/comments/:comment_id", rt.wrap(rt.uncommentPhoto))
 
 	// Following routes
-	rt.router.PUT("/users/:username/following", rt.wrap(rt.followUser))
-	rt.router.DELETE("/users/:username/following", rt.wrap(rt.unfollowUser))
+	rt.router.PUT("/users/:username/following/", rt.wrap(rt.followUser))
+	rt.router.DELETE("/users/:username/following/:username_followed", rt.wrap(rt.unfollowUser))
 
 	return rt.router
 }

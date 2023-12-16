@@ -18,7 +18,7 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return nil
@@ -32,14 +32,14 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 			if err == sql.ErrNoRows {
 				w.WriteHeader(http.StatusNotFound)
 				ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-				if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+				if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())); err != nil {
 					ctx.Logger.WithError(err).Error("errow while writing the response")
 				}
 				return nil
 			}
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error("error while getting the username associated with the given token")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while getting the username associated with the given token" /*err*/).Error())); err != nil {
 				ctx.Logger.WithError(err).Error("errow while writing the response")
 			}
 			return nil
@@ -64,7 +64,7 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the post is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the post is valid" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return nil, nil
@@ -88,7 +88,7 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error("error while checking if the post exists")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the post exists" /*err*/).Error())); err != nil {
 				ctx.Logger.WithError(err).Error("errow while writing the response")
 			}
 		}
@@ -101,7 +101,7 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return nil, nil

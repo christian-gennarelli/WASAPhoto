@@ -27,7 +27,7 @@ func (rt _router) likePhoto(w http.ResponseWriter, r *http.Request, ps httproute
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.WithError(err).Error("error encountered while adding the like to the post")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "error encountered while adding the like to the post" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return
@@ -54,7 +54,7 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return
@@ -82,7 +82,7 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.WithError(err).Error("error encountered while removing the like to the post")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "error encountered while removing the like to the post" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return
@@ -115,7 +115,7 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	if err := json.NewDecoder(r.Body).Decode(&comment); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error encountered while decoding the comment from the request body")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error encountered while decoding the comment from the request body" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return
@@ -126,7 +126,7 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while adding the comment to the post")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while adding the comment to the post" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return
@@ -151,7 +151,7 @@ func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps http
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the comment is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the comment is valid" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return
@@ -177,7 +177,7 @@ func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps http
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error("error while getting the owner of the given comment")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while getting the owner of the given comment" /*err*/).Error())); err != nil {
 				ctx.Logger.WithError(err).Error("errow while writing the response")
 			}
 		}
@@ -198,7 +198,7 @@ func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps http
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while removing the comment from the post")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while removing the comment from the post" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return

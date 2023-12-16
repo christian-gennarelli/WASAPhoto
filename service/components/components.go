@@ -17,8 +17,10 @@ type Username struct {
 }
 
 type User struct {
-	ID       string
-	Username string
+	ID        string
+	Username  string
+	Birthdate string
+	Name      string
 }
 
 type Profile struct {

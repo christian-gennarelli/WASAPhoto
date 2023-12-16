@@ -92,8 +92,10 @@ func New(db *sql.DB) (AppDatabase, error) {
 	}
 
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS User (
-		Username STRING PRIMARY KEY NOT NULL ,
-		ID STRING UNIQUE NOT NULL
+		Username STRING PRIMARY KEY NOT NULL,
+		ID STRING UNIQUE NOT NULL,
+		Birthdate DATE,
+		Name STRING
 	);
 	CREATE TABLE IF NOT EXISTS Post (
 		PostID VARCHAR(64) PRIMARY KEY,

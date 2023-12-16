@@ -103,8 +103,8 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
@@ -112,7 +112,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.Error("provided username not valid")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
@@ -122,7 +122,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 		w.WriteHeader(http.StatusUnauthorized)
 		ctx.Logger.WithError(err).Error("not authorized to change the username of another user")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "not authorized to change the username of another user").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
@@ -131,9 +131,9 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	var new_username components.Username
 	err = json.NewDecoder(r.Body).Decode(&new_username)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
+		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.WithError(err).Error("error while decoding the body of the request")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "error while decoding the body of the request" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return
@@ -170,7 +170,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error("error while updating the username")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while updating the username" /*err*/).Error())); err != nil {
 				ctx.Logger.WithError(err).Error("errow while writing the response")
 			}
 		}
@@ -182,7 +182,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while enconding the response as JSON")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while enconding the response as JSON" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return
@@ -191,7 +191,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	if _, err = w.Write(response); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while writing the response")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while writing the response" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return

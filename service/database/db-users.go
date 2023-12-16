@@ -25,12 +25,12 @@ func (db appdbimpl) PostUserID(Username string) (*components.ID, error) {
 		if err == sql.ErrNoRows {
 			ID.RandID = uniuri.NewLen(64)
 
-			stmt, err = db.c.Prepare("INSERT INTO User (Username, ID) VALUES (?, ?)")
+			stmt, err = db.c.Prepare("INSERT INTO User (Username, ID, Birthdate) VALUES (?, ?, ?)")
 			if err != nil {
 				return nil, fmt.Errorf("error while preparing the SQL statement to create the new user")
 			}
 
-			if _, err = stmt.Exec(Username, ID.RandID); err != nil {
+			if _, err = stmt.Exec(Username, ID.RandID, "2023-12-15"); err != nil {
 				return nil, fmt.Errorf("error while performing the query to create the new user")
 			}
 		} else {
@@ -81,19 +81,19 @@ func (db appdbimpl) SearchUser(Username string) (*components.UserList, error) {
 
 }
 
-func (db appdbimpl) UpdateUsername(OldUsername string, NewUsername string) error {
+func (db appdbimpl) UpdateUsername(NewUsername string, OldUsername string) error {
 
 	stmt, err := db.c.Prepare("UPDATE User SET Username = ? WHERE Username = ?")
 	if err != nil {
-		return fmt.Errorf("error while preparing the SQL statement to updating the username")
+		return err //fmt.Errorf("error while preparing the SQL statement to updating the username")
 	}
 
 	_, err = stmt.Exec(NewUsername, OldUsername)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return err
-		}
-		return fmt.Errorf("error while performing the query to obtain the info about the user with the provided username")
+		// if err == sql.ErrNoRows {
+		// 	return err
+		// }
+		return err //fmt.Errorf("error while performing the query to obtain the info about the user with the provided username")
 	}
 
 	return nil
@@ -104,16 +104,16 @@ func (db appdbimpl) GetUsernameByToken(Id string) (*components.Username, error) 
 
 	stmt, err := db.c.Prepare("SELECT Username FROM User WHERE ID = ?")
 	if err != nil {
-		return nil, fmt.Errorf("error encountered while preparing the query to retrieve the username associated with the given token")
+		return nil, err //fmt.Errorf("error encountered while preparing the query to retrieve the username associated with the given token")
 	}
 
 	var username components.Username
 	err = stmt.QueryRow(Id).Scan(&username.Uname)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, err
-		}
-		return nil, fmt.Errorf("error while executing the query to retrieve the username associated with the given token")
+		// if err == sql.ErrNoRows {
+		// 	return nil, err
+		// }
+		return nil, err //fmt.Errorf("error while executing the query to retrieve the username associated with the given token")
 	}
 
 	return &username, nil
@@ -124,15 +124,15 @@ func (db appdbimpl) GetOwnerUsernameOfComment(Id string) (*components.Username, 
 
 	stmt, err := db.c.Prepare("SELECT Author FROM Comment WHERE CommentID = ?")
 	if err != nil {
-		return nil, fmt.Errorf("error while preparing the SQL statement to retrieve the author of the provided comment")
+		return nil, err //fmt.Errorf("error while preparing the SQL statement to retrieve the author of the provided comment")
 	}
 
 	var username components.Username
 	if err = stmt.QueryRow(Id).Scan(&username.Uname); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, err
-		}
-		return nil, fmt.Errorf("error while executing the SQL statement to retrieve the author of the provided comment")
+		// if err == sql.ErrNoRows {
+		// 	return nil, err
+		// }
+		return nil, err //fmt.Errorf("error while executing the SQL statement to retrieve the author of the provided comment")
 	}
 
 	return &username, nil
