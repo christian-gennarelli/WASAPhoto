@@ -45,7 +45,7 @@ func (db appdbimpl) PostUserID(Username string) (*components.ID, error) {
 
 func (db appdbimpl) SearchUser(Username string) (*components.UserList, error) {
 
-	// Prepare the SQL statement for finding all the users with "uname" as substring
+	// Prepare the SQL statement for finding all the users with "Value" as substring
 	stmt, err := db.c.Prepare("SELECT Username FROM User WHERE Username LIKE '%?%'")
 	if err != nil {
 		return nil, fmt.Errorf("error while preparing the SQL statement to obtain the list of users with the provided string as substring")
@@ -66,7 +66,7 @@ func (db appdbimpl) SearchUser(Username string) (*components.UserList, error) {
 
 		// Retrieve the next username
 		var user components.Username
-		err = users.Scan(&user.Uname)
+		err = users.Scan(&user.Value)
 		if err != nil {
 			return nil, fmt.Errorf("error while extracting the username from the query")
 		}
@@ -108,7 +108,7 @@ func (db appdbimpl) GetUsernameByToken(Id string) (*components.Username, error) 
 	}
 
 	var username components.Username
-	err = stmt.QueryRow(Id).Scan(&username.Uname)
+	err = stmt.QueryRow(Id).Scan(&username.Value)
 	if err != nil {
 		// if err == sql.ErrNoRows {
 		// 	return nil, err
@@ -128,7 +128,7 @@ func (db appdbimpl) GetOwnerUsernameOfComment(Id string) (*components.Username, 
 	}
 
 	var username components.Username
-	if err = stmt.QueryRow(Id).Scan(&username.Uname); err != nil {
+	if err = stmt.QueryRow(Id).Scan(&username.Value); err != nil {
 		// if err == sql.ErrNoRows {
 		// 	return nil, err
 		// }

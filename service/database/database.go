@@ -67,6 +67,10 @@ type AppDatabase interface {
 	// Following queries
 	FollowUser(followerUsername string, followingUsername string) error
 	UnfollowUser(followerUsername string, followingUsername string) error
+
+	// Follower queries
+	GetFollowingList(followingUsername string) (*components.UserList, error)
+	GetFollowersList(followedUsername string) (*components.UserList, error)
 }
 
 type appdbimpl struct {
@@ -91,7 +95,8 @@ func New(db *sql.DB) (AppDatabase, error) {
 		}
 	}
 
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS User (
+	_, err = db.Exec(`PRAGMA foreign_keys = on;
+	CREATE TABLE IF NOT EXISTS User (
 		Username STRING PRIMARY KEY NOT NULL,
 		ID STRING UNIQUE NOT NULL,
 		Birthdate DATE,
@@ -113,10 +118,10 @@ func New(db *sql.DB) (AppDatabase, error) {
 	);
 	CREATE TABLE IF NOT EXISTS Follow (
 		Follower VARCHAR(16) NOT NULL,
-		Following VARCHAR(16) NOT NULL,
-		PRIMARY KEY (Follower, Following),
-		FOREIGN KEY (Following) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE,
-		FOREIGN KEY (Following) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
+		Followed VARCHAR(16) NOT NULL,
+		PRIMARY KEY (Follower, Followed),
+		FOREIGN KEY (Follower) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE,
+		FOREIGN KEY (Followed) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
 	);
 	CREATE TABLE IF NOT EXISTS Comment (
 		CommentID INTEGER AUTO_INCREMENT PRIMARY KEY,

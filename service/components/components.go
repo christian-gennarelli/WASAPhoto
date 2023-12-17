@@ -13,7 +13,7 @@ type ID struct {
 }
 
 type Username struct {
-	Uname string `json:"name"`
+	Value string `json:"name"`
 }
 
 type User struct {
@@ -78,7 +78,7 @@ func (Username Username) CheckIfValid() (*bool, error) {
 		return nil, fmt.Errorf("error while compiling the regex for checking the validity of the provided username")
 	}
 
-	valid := regex.MatchString(Username.Uname)
+	valid := regex.MatchString(Username.Value)
 	return &valid, nil
 }
 

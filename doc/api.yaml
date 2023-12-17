@@ -905,7 +905,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /users/{username}/followers/:
+  /users/{username}/following/:
     parameters:
       - in: path
         name: username
@@ -914,21 +914,21 @@ paths:
         required: true
 
     get:
-      operationId: getFollowersList
-      tags: ['FOLLOWERS']
+      operationId: getFollowingList
+      tags: ['FOLLOW']
       summary: Get the follower list
       description: |-
-        Return the list of the users following the username provided in the path.
+        Return the list of the users that username follows.
       responses:
         '200': # OK Found
           description: |-
-            Everything went correctly, and the list of users liking that post is returned.
+            Everything went correctly.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserList'
         '204': # No content found
-          description: No user follows this user.
+          description: This user does not follow any user.
         '400': # Bad request
           description: Bad request provided.
           content:
@@ -947,24 +947,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                
-  /users/{username}/following/:
-  
-    parameters:
-      - in: path
-        name: username
-        schema:
-          $ref: '#/components/schemas/Username'
-        required: true
   
     put: 
       operationId: followUser
       summary: Follow a new user
-      tags: ['FOLLOWING']
+      tags: ['FOLLOW']
       description: |-
-        Add a new user - here, 'following_username' - in the list of the following users for 'username'.
+        Add a new user - here, 'following_username', requested in the body - in the list of the following users for 'username'.
       security:
         - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Username'
       responses:
         '204': # OK Created
           description: User 'username' successfully started to follow 'following_username'.
@@ -1001,7 +997,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
   
-  /users/{username}/following/{following_username}:
+  /users/{username}/followers/{following_username}:
     parameters:
         - in: path
           name: username
@@ -1016,7 +1012,7 @@ paths:
     
     delete: 
       operationId: unfollowUser
-      tags: ['FOLLOWING']
+      tags: ['FOLLOW']
       summary: Unfollow an user
       description: |-
         Delete a user from the list of the following user.
@@ -1033,6 +1029,55 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401': # Unauthenticated
           description: The client has not been authenticated (yet).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403': # Unauthorized
+          description: |-
+            The authenticated user cannot delete a comment of another user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404': # Username or post not found
+          description: Either the post to be uncommented or the owner of the post has not been found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500': # Internal server error.
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /users/{username}/followers/:
+    parameters:
+      - in: path
+        name: username
+        schema:
+          $ref: '#/components/schemas/Username'
+        required: true
+    
+    get: 
+      operationId: getFollowersList
+      tags: ['FOLLOW']
+      summary: Get the list of followers
+      description: |-
+        Return the list of followers of the given username
+      security:
+        - BearerAuth: []
+      responses:
+        '200': # OK
+          description: List successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserList'
+        '400': # Bad request
+          description: Bad request provided.
           content:
             application/json:
               schema:

@@ -16,7 +16,7 @@ func (rt _router) getUserProfile(w http.ResponseWriter, r *http.Request, ps http
 	w.Header().Set("Content-Type", "application/json")
 
 	// Retrieve the username and check if it is valid
-	username := components.Username{Uname: ps.ByName("username")}
+	username := components.Username{Value: ps.ByName("username")}
 	valid, err := username.CheckIfValid()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -36,7 +36,7 @@ func (rt _router) getUserProfile(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// Retrieve the profile of the user with the given username
-	profile, err := rt.db.GetUserProfile(username.Uname)
+	profile, err := rt.db.GetUserProfile(username.Value)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
@@ -66,8 +66,7 @@ func (rt _router) getUserProfile(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(response)
-	if err != nil {
+	if _, err = w.Write(response); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error(("error while writing the response in the response body"))
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
@@ -96,7 +95,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 
-	username := components.Username{Uname: ps.ByName("username")}
+	username := components.Username{Value: ps.ByName("username")}
 
 	// Check if the provided username is valid
 	valid, err := username.CheckIfValid()
@@ -118,7 +117,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	// Check if the two usernames coincide
-	if username.Uname != usernameAuth.Uname { // Not the same username
+	if username.Value != usernameAuth.Value { // Not the same username
 		w.WriteHeader(http.StatusUnauthorized)
 		ctx.Logger.WithError(err).Error("not authorized to change the username of another user")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "not authorized to change the username of another user").Error())); err != nil {
@@ -159,7 +158,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	// Update the username
-	err = rt.db.UpdateUsername(new_username.Uname, username.Uname)
+	err = rt.db.UpdateUsername(new_username.Value, username.Value)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)

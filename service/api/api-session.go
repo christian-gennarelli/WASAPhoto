@@ -53,7 +53,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	// Get the ID from the database
-	ID, err := rt.db.PostUserID(Username.Uname)
+	ID, err := rt.db.PostUserID(Username.Value)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

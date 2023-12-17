@@ -96,7 +96,7 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 	}
 
 	// Retrieve the username from the path and check if it is valid
-	ownerUsername := components.Username{Uname: ps.ByName("username")}
+	ownerUsername := components.Username{Value: ps.ByName("username")}
 	valid, err = ownerUsername.CheckIfValid()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -116,7 +116,7 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 	}
 
 	// Check if the username in the path is the owner of the given post
-	err = rt.db.CheckIfOwnerPost(ownerUsername.Uname, postID.Value)
+	err = rt.db.CheckIfOwnerPost(ownerUsername.Value, postID.Value)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)

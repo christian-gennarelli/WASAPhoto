@@ -47,7 +47,7 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	// Search the users
-	users, err := rt.db.SearchUser(searchedUsername.Uname)
+	users, err := rt.db.SearchUser(searchedUsername.Value)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while searching the users with the provided username as substring")

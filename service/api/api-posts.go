@@ -23,7 +23,7 @@ func (rt _router) likePhoto(w http.ResponseWriter, r *http.Request, ps httproute
 	_, postID := helperPost(w, r, ps, ctx, rt)
 
 	// Add the username of the authenticated user to the list of likes of the post
-	err := rt.db.AddLikeToPost(username.Uname, postID.Value)
+	err := rt.db.AddLikeToPost(username.Value, postID.Value)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.WithError(err).Error("error encountered while adding the like to the post")
@@ -49,7 +49,7 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	_, postID := helperPost(w, r, ps, ctx, rt)
 
 	// Check if the username associated with the Auth token and the liker_username provided in the path are the same
-	liker_username := components.Username{Uname: ps.ByName("liker_username")}
+	liker_username := components.Username{Value: ps.ByName("liker_username")}
 	valid, err := liker_username.CheckIfValid()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -68,7 +68,7 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
-	if liker_username.Uname != username.Uname {
+	if liker_username.Value != username.Value {
 		w.WriteHeader(http.StatusUnauthorized)
 		ctx.Logger.WithError(err).Error("authenticated user cannot like another photo on behalf of another user")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "authenticated user cannot like another photo on behalf of another user").Error())); err != nil {
@@ -78,7 +78,7 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Remove the like from the post
-	err = rt.db.RemoveLikeFromPost(liker_username.Uname, postID.Value)
+	err = rt.db.RemoveLikeFromPost(liker_username.Value, postID.Value)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.WithError(err).Error("error encountered while removing the like to the post")
@@ -122,7 +122,7 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	// Add the comment to the post
-	err := rt.db.AddCommentToPost(postID.Value, comment.Body, comment.CreationDatetime.Format("2006-01-02T15:04:05"), username.Uname)
+	err := rt.db.AddCommentToPost(postID.Value, comment.Body, comment.CreationDatetime.Format("2006-01-02T15:04:05"), username.Value)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while adding the comment to the post")
@@ -184,7 +184,7 @@ func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps http
 		return
 	}
 
-	if ownerUsernameComment.Uname != username.Uname { // Authenticated user not owner of the comment
+	if ownerUsernameComment.Value != username.Value { // Authenticated user not owner of the comment
 		w.WriteHeader(http.StatusUnauthorized)
 		ctx.Logger.WithError(err).Error("authenticated user cannot uncomment a photo on behalf of another user")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "authenticated user cannot uncomment a photo on behalf of another user").Error())); err != nil {
