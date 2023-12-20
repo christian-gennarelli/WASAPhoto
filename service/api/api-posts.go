@@ -147,20 +147,20 @@ func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps http
 
 	// Retrieve the id of the comment from the path and check if it is valid
 	commentID := components.ID{Value: ps.ByName("comment_id")}
-	valid, err := commentID.CheckIfValid()
+	err := commentID.CheckIfValid()
 	if err != nil {
+		if err.Error() == "id not valid" {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.WithError(err).Error("provided comment not valid")
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided comment not valid").Error())); err != nil {
+				ctx.Logger.WithError(err).Error("errow while writing the response")
+			}
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the comment is valid")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the comment is valid" /*err*/).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
-		}
-		return
-	}
-	if !*valid {
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.WithError(err).Error("provided comment not valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided comment not valid").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}

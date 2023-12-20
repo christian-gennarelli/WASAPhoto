@@ -1177,7 +1177,7 @@ paths:
         - BearerAuth: []
       responses:
         '204': # OK
-          description: User 'username' has now banned the user 'following_username'.
+          description: OK
         '400': # Bad request
           description: Bad request provided.
           content:

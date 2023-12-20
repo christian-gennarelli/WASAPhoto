@@ -17,10 +17,11 @@ type Username struct {
 }
 
 type User struct {
-	ID        string
-	Username  string
-	Birthdate string
-	Name      string
+	ID         string
+	ProfilePic string
+	Username   string
+	Birthdate  string
+	Name       string
 }
 
 type Profile struct {
@@ -35,7 +36,7 @@ type Profile struct {
 */
 
 type UserList struct {
-	Users []Username
+	Users []User
 }
 
 type Photo struct {
@@ -82,14 +83,18 @@ func (Username Username) CheckIfValid() (*bool, error) {
 	return &valid, nil
 }
 
-func (Id ID) CheckIfValid() (*bool, error) {
+func (Id ID) CheckIfValid() error {
 
 	regex, err := regexp.Compile(ID_REGEXP)
 	if err != nil {
-		return nil, fmt.Errorf("error while compiling the regex for checking the validity of the provided ID")
+		return fmt.Errorf("error while compiling the regex for checking the validity of the provided ID")
 	}
 
 	valid := regex.MatchString(Id.Value)
-	return &valid, nil
+	if valid {
+		return nil
+	} else {
+		return fmt.Errorf("id not valid")
+	}
 
 }

@@ -1,14 +1,18 @@
 package database
 
 import (
+	"bufio"
 	"database/sql"
+	"encoding/base64"
+	"io"
+	"os"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
 )
 
 func (db appdbimpl) GetFollowersList(followedUsername string) (*components.UserList, error) {
 
-	stmt, err := db.c.Prepare("SELECT Follower FROM Follow WHERE Followed = ?")
+	stmt, err := db.c.Prepare("SELECT U.Username, U.Birthdate, U.ProfilePicPath, U.Name FROM Follow F JOIN User U ON F.Follower = U.Username WHERE Followed = ?")
 	if err != nil {
 		return nil, err //fmt.Errorf("error while preparing the SQL statement to obtain the followers of the given username")
 	}
@@ -20,12 +24,18 @@ func (db appdbimpl) GetFollowersList(followedUsername string) (*components.UserL
 
 	var userList components.UserList
 	for rows.Next() {
-		var username components.Username
-		err = rows.Scan(&username.Value)
+		var user components.User
+		err = rows.Scan(&user.Username, &user.Birthdate, &user.ProfilePic, &user.Name)
 		if err != nil {
 			return nil, err //fmt.Errorf("error while scanning the result of the query")
 		}
-		userList.Users = append(userList.Users, username)
+
+		img, _ := os.Open(user.ProfilePic)
+		reader := bufio.NewReader(img)
+		content, _ := io.ReadAll(reader)
+		user.ProfilePic = base64.StdEncoding.EncodeToString(content)
+
+		userList.Users = append(userList.Users, user)
 	}
 
 	return &userList, nil
@@ -34,7 +44,7 @@ func (db appdbimpl) GetFollowersList(followedUsername string) (*components.UserL
 
 func (db appdbimpl) GetFollowingList(followerUsername string) (*components.UserList, error) {
 
-	stmt, err := db.c.Prepare("SELECT Followed FROM Follow WHERE Follower = ?")
+	stmt, err := db.c.Prepare("SELECT U.Username, COALESCE(U.Birthdate, ''), U.ProfilePicPath, COALESCE(U.Name, '') FROM Follow F JOIN User U ON F.Followed = U.Username WHERE Follower = ?")
 	if err != nil {
 		return nil, err //fmt.Errorf("error while preparing the SQL statement to obtain the followers of the given username")
 	}
@@ -46,12 +56,18 @@ func (db appdbimpl) GetFollowingList(followerUsername string) (*components.UserL
 
 	var userList components.UserList
 	for rows.Next() {
-		var username components.Username
-		err = rows.Scan(&username.Value)
+		var user components.User
+		err = rows.Scan(&user.Username, &user.Birthdate, &user.ProfilePic, &user.Name)
 		if err != nil {
 			return nil, err //fmt.Errorf("error while scanning the result of the query")
 		}
-		userList.Users = append(userList.Users, username)
+
+		img, _ := os.Open(user.ProfilePic)
+		reader := bufio.NewReader(img)
+		content, _ := io.ReadAll(reader)
+		user.ProfilePic = base64.StdEncoding.EncodeToString(content)
+
+		userList.Users = append(userList.Users, user)
 	}
 
 	return &userList, nil

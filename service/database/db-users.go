@@ -1,8 +1,12 @@
 package database
 
 import (
+	"bufio"
 	"database/sql"
+	"encoding/base64"
 	"fmt"
+	"io"
+	"os"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
 	"github.com/dchest/uniuri"
@@ -25,12 +29,12 @@ func (db appdbimpl) PostUserID(Username string) (*components.ID, error) {
 		if err == sql.ErrNoRows {
 			ID.Value = uniuri.NewLen(64)
 
-			stmt, err = db.c.Prepare("INSERT INTO User (Username, ID, Birthdate) VALUES (?, ?, ?)")
+			stmt, err = db.c.Prepare("INSERT INTO User (Username, ID) VALUES (?, ?)")
 			if err != nil {
 				return nil, err //fmt.Errorf("error while preparing the SQL statement to create the new user")
 			}
 
-			if _, err = stmt.Exec(Username, ID.Value, "2023-12-16"); err != nil {
+			if _, err = stmt.Exec(Username, ID.Value); err != nil {
 				return nil, err //fmt.Errorf("error while performing the query to create the new user")
 			}
 		} else {
@@ -46,7 +50,7 @@ func (db appdbimpl) PostUserID(Username string) (*components.ID, error) {
 func (db appdbimpl) SearchUser(Username string) (*components.UserList, error) {
 
 	// Prepare the SQL statement for finding all the users with "Value" as substring
-	stmt, err := db.c.Prepare("SELECT Username FROM User WHERE Username LIKE '%?%'")
+	stmt, err := db.c.Prepare("SELECT Username, Birthdate, ProfilePicPath, Name FROM User WHERE Username LIKE '%?%'")
 	if err != nil {
 		return nil, fmt.Errorf("error while preparing the SQL statement to obtain the list of users with the provided string as substring")
 	}
@@ -65,11 +69,16 @@ func (db appdbimpl) SearchUser(Username string) (*components.UserList, error) {
 	for users.Next() {
 
 		// Retrieve the next username
-		var user components.Username
-		err = users.Scan(&user.Value)
+		var user components.User
+		err = users.Scan(&user.Username, &user.Birthdate, &user.ProfilePic, &user.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error while extracting the username from the query")
 		}
+
+		img, _ := os.Open(user.ProfilePic)
+		reader := bufio.NewReader(img)
+		content, _ := io.ReadAll(reader)
+		user.ProfilePic = base64.StdEncoding.EncodeToString(content)
 
 		// Insert into the returned list of usernames
 		ulist.Users = append(ulist.Users, user)

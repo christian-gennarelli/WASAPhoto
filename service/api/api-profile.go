@@ -55,7 +55,7 @@ func (rt _router) getUserProfile(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// Send the profile to the client
-	response, err := json.Marshal(profile)
+	response, err := json.MarshalIndent(profile, "", " ")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while enconding the response as JSON")
@@ -177,7 +177,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	// Send the new username to the client as confirmation of the its new username
-	response, err := json.Marshal(new_username)
+	response, err := json.MarshalIndent(new_username, "", " ")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while enconding the response as JSON")

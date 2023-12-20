@@ -53,11 +53,16 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.POST("/users/:username/profile/posts/:post_id/comments/", rt.wrap(rt.commentPhoto))
 	rt.router.DELETE("/users/:username/profile/posts/:post_id/comments/:comment_id", rt.wrap(rt.uncommentPhoto))
 
-	// Follower routes
+	// Follow routes
 	rt.router.PUT("/users/:username/following/", rt.wrap(rt.followUser))
 	rt.router.DELETE("/users/:username/following/:followed_username", rt.wrap(rt.unfollowUser))
 	rt.router.GET("/users/:username/following/", rt.wrap(rt.getFollowingList))
 	rt.router.GET("/users/:username/followers/", rt.wrap(rt.getFollowersList))
+
+	// Ban routes
+	rt.router.PUT("/users/:username/banned/", rt.wrap(rt.banUser))
+	rt.router.DELETE("/users/:username/banned/:banned_username", rt.wrap(rt.unbanUser))
+	rt.router.GET("/users/:username/banned/", rt.wrap(rt.getBanUserList))
 
 	return rt.router
 }

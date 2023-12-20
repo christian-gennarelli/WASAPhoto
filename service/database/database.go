@@ -64,13 +64,17 @@ type AppDatabase interface {
 	// Profile queries
 	GetUserProfile(Username string) (*components.Profile, error)
 
-	// Following queries
+	// Follow queries
+	GetFollowingList(followingUsername string) (*components.UserList, error)
+	GetFollowersList(followedUsername string) (*components.UserList, error)
 	FollowUser(followerUsername string, followingUsername string) error
 	UnfollowUser(followerUsername string, followingUsername string) error
 
-	// Follower queries
-	GetFollowingList(followingUsername string) (*components.UserList, error)
-	GetFollowersList(followedUsername string) (*components.UserList, error)
+	// Ban queries
+	BanUser(bannerUsername, bannedUsername string) error
+	UnbanUser(bannerUsername, bannedUsername string) error
+	GetBanUserList(bannerUsername string) (*components.UserList, error)
+	CheckIfBanned(bannerUsername string, bannedUsername string) (*bool, error)
 }
 
 type appdbimpl struct {
@@ -97,8 +101,9 @@ func New(db *sql.DB) (AppDatabase, error) {
 
 	_, err = db.Exec(`PRAGMA foreign_keys = on;
 	CREATE TABLE IF NOT EXISTS User (
-		Username STRING PRIMARY KEY NOT NULL,
 		ID STRING UNIQUE NOT NULL,
+		Username STRING PRIMARY KEY NOT NULL,
+		ProfilePicPath STRING DEFAULT './photos/profile_pics/default.png',
 		Birthdate DATE,
 		Name STRING
 	);
@@ -111,14 +116,14 @@ func New(db *sql.DB) (AppDatabase, error) {
 	);
 	CREATE TABLE IF NOT EXISTS Like (
 		PostID INTEGER AUTO_INCREMENT INTEGER,
-		Liker VARCHAR(16) NOT NULL,
+		Liker STRING NOT NULL,
 		PRIMARY KEY (PostID, Liker),
 		FOREIGN KEY (PostID) REFERENCES Post(PostID), 
 		FOREIGN KEY (Liker) REFERENCES User(Token) ON DELETE CASCADE ON UPDATE CASCADE
 	);
 	CREATE TABLE IF NOT EXISTS Follow (
-		Follower VARCHAR(16) NOT NULL,
-		Followed VARCHAR(16) NOT NULL,
+		Follower STRING NOT NULL,
+		Followed STRING NOT NULL,
 		PRIMARY KEY (Follower, Followed),
 		FOREIGN KEY (Follower) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE,
 		FOREIGN KEY (Followed) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
@@ -126,17 +131,17 @@ func New(db *sql.DB) (AppDatabase, error) {
 	CREATE TABLE IF NOT EXISTS Comment (
 		CommentID INTEGER AUTO_INCREMENT PRIMARY KEY,
 		PostID INTEGER NOT NULL,
-		Author VARCHAR(16) UNIQUE NOT NULL,
+		Author STRING UNIQUE NOT NULL,
 		CreationDatetime DATETIME,
-		Comment VARCHAR(128),
+		Comment STRING,
 		FOREIGN KEY (Author) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
 	);
 	CREATE TABLE IF NOT EXISTS Ban (
-		Banner VARCHAR(16),
-		Banned VARCHAR(16),
+		Banner STRING,
+		Banned STRING,
 		PRIMARY KEY (Banner, Banned),
 		FOREIGN KEY (Banned) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE,
-		FOREIGN KEY (Banned) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
+		FOREIGN KEY (Banner) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
 	);`)
 
 	if err != nil {

@@ -47,7 +47,7 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	// Search the users
-	users, err := rt.db.SearchUser(searchedUsername.Value)
+	userList, err := rt.db.SearchUser(searchedUsername.Value)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while searching the users with the provided username as substring")
@@ -56,7 +56,7 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 		}
 	}
 
-	response, err := json.Marshal(users)
+	response, err := json.MarshalIndent(userList.Users, "", " ")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while encoding the response body as JSON")
@@ -66,7 +66,7 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 		return
 	}
 
-	if len(users.Users) > 0 {
+	if len(userList.Users) > 0 {
 		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusNoContent)
