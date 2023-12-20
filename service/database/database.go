@@ -31,11 +31,9 @@ Then you can initialize the AppDatabase and pass it to the api package.
 package database
 
 import (
-	"bufio"
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
 )
@@ -49,8 +47,6 @@ type AppDatabase interface {
 	Ping() error
 
 	// User queries
-	CheckCombinationIsValid(Username string, ID string) (*bool, error)
-	CheckIfUsernameExists(Username string) (*bool, error)
 	GetUsernameByToken(Id string) (*components.Username, error)
 	GetOwnerUsernameOfComment(CommentID string) (*components.Username, error)
 	PostUserID(Username string) (*components.ID, error)
@@ -58,9 +54,8 @@ type AppDatabase interface {
 	UpdateUsername(NewUsername string, OldUsername string) error
 
 	// Post queries
-	CheckIfPostExists(PostID string) (*bool, error)
-	CheckIfCommentExists(CommentID string) (*bool, error)
-	CheckIfOwnerPost(Username string, PostID string) (*bool, error)
+	CheckIfPostExists(PostID string) error
+	CheckIfOwnerPost(Username string, PostID string) error
 	AddLikeToPost(Username string, PostID string) error
 	RemoveLikeFromPost(Username string, PostID string) error
 	AddCommentToPost(PostID string, Body string, CreationDatetime string, Author string) error
@@ -69,9 +64,17 @@ type AppDatabase interface {
 	// Profile queries
 	GetUserProfile(Username string) (*components.Profile, error)
 
-	// Following queries
+	// Follow queries
+	GetFollowingList(followingUsername string) (*components.UserList, error)
+	GetFollowersList(followedUsername string) (*components.UserList, error)
 	FollowUser(followerUsername string, followingUsername string) error
 	UnfollowUser(followerUsername string, followingUsername string) error
+
+	// Ban queries
+	BanUser(bannerUsername, bannedUsername string) error
+	UnbanUser(bannerUsername, bannedUsername string) error
+	GetBanUserList(bannerUsername string) (*components.UserList, error)
+	CheckIfBanned(bannerUsername string, bannedUsername string) (*bool, error)
 }
 
 type appdbimpl struct {
@@ -96,38 +99,52 @@ func New(db *sql.DB) (AppDatabase, error) {
 		}
 	}
 
-	// Read the content of the SQL statement needed to build up the structure of the database (if not already present)
-	file, err := os.Open("database_setup.txt")
+	_, err = db.Exec(`PRAGMA foreign_keys = on;
+	CREATE TABLE IF NOT EXISTS User (
+		ID STRING UNIQUE NOT NULL,
+		Username STRING PRIMARY KEY NOT NULL,
+		ProfilePicPath STRING DEFAULT './photos/profile_pics/default.png',
+		Birthdate DATE,
+		Name STRING
+	);
+	CREATE TABLE IF NOT EXISTS Post (
+		PostID INTEGER AUTO_INCREMENT PRIMARY KEY,
+		Author VARCHAR(16) UNIQUE NOT NULL,
+		CreationDatetime DATETIME,
+		Description VARCHAR(128),
+		FOREIGN KEY (Author) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
+	);
+	CREATE TABLE IF NOT EXISTS Like (
+		PostID INTEGER AUTO_INCREMENT INTEGER,
+		Liker STRING NOT NULL,
+		PRIMARY KEY (PostID, Liker),
+		FOREIGN KEY (PostID) REFERENCES Post(PostID), 
+		FOREIGN KEY (Liker) REFERENCES User(Token) ON DELETE CASCADE ON UPDATE CASCADE
+	);
+	CREATE TABLE IF NOT EXISTS Follow (
+		Follower STRING NOT NULL,
+		Followed STRING NOT NULL,
+		PRIMARY KEY (Follower, Followed),
+		FOREIGN KEY (Follower) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE,
+		FOREIGN KEY (Followed) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
+	);
+	CREATE TABLE IF NOT EXISTS Comment (
+		CommentID INTEGER AUTO_INCREMENT PRIMARY KEY,
+		PostID INTEGER NOT NULL,
+		Author STRING UNIQUE NOT NULL,
+		CreationDatetime DATETIME,
+		Comment STRING,
+		FOREIGN KEY (Author) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
+	);
+	CREATE TABLE IF NOT EXISTS Ban (
+		Banner STRING,
+		Banned STRING,
+		PRIMARY KEY (Banner, Banned),
+		FOREIGN KEY (Banned) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE,
+		FOREIGN KEY (Banner) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
+	);`)
+
 	if err != nil {
-		fmt.Println("Error encoutered while reading the database SQL statement from the corresponding file!")
-		return nil, err
-	}
-	defer file.Close()
-
-	// What bufio.Scanner.Scan() does is to split the content of the file according in so-called tokens, which are unit of text separated by a delimiter (\n is the default one.)
-	var db_setup string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text() // bufio.Scanner.Text() return the content of the current token.
-		db_setup += line + "\n"
-	}
-
-	if scanner.Err() != nil {
-		fmt.Println("Error from the scanner!")
-		return nil, scanner.Err()
-	}
-
-	// Run the following SQL statement to build the structure of the database
-	stmt, err := db.Prepare(db_setup)
-	if err != nil {
-		fmt.Println("Error while preparing the SQL statement for preparing the database!")
-		return nil, err
-	}
-
-	// Execute the SQL statement
-	_, err = stmt.Exec()
-	if err != nil {
-		fmt.Println("Error while executing the SQL statement to prepare the database!")
 		return nil, err
 	}
 

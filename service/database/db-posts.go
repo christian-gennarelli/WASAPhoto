@@ -1,75 +1,44 @@
 package database
 
 import (
-	"fmt"
-
-	"github.com/dchest/uniuri"
+	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
 )
 
-func (db appdbimpl) CheckIfPostExists(PostID string) (*bool, error) {
+func (db appdbimpl) CheckIfPostExists(PostID string) error {
 
-	stmt, err := db.c.Prepare("SELECT 1 FROM Post WHERE PostID = ?")
+	stmt, err := db.c.Prepare("SELECT PostID FROM Post WHERE PostID = ?")
 	if err != nil {
-		return nil, fmt.Errorf("error while preparing the SQL statement to obtain the check if the provided post exists")
+		return err //fmt.Errorf("error encountered while preparing the query to check if the given post exists")
 	}
 
-	rows, err := stmt.Query(PostID)
-	if err != nil {
-		return nil, fmt.Errorf("error while performing the query to check if the provided post exists")
-	} else {
-		defer rows.Close()
+	var id components.ID
+	if err = stmt.QueryRow(PostID).Scan(&id.Value); err != nil {
+		// if err == sql.ErrNoRows {
+		// 	return err
+		// }
+		return err //fmt.Errorf("error encountered while executing the query to check if the given post exists")
 	}
 
-	valid := true
-	if !rows.Next() {
-		valid = false
-	}
-
-	return &valid, nil
+	return nil
 
 }
 
-func (db appdbimpl) CheckIfCommentExists(CommentID string) (*bool, error) {
+func (db appdbimpl) CheckIfOwnerPost(Username string, PostID string) error {
 
-	stmt, err := db.c.Prepare("SELECT 1 FROM Comment WHERE CommentID = ?")
+	stmt, err := db.c.Prepare("SELECT P.Author FROM User U JOIN Post P ON U.Username = P.Author WHERE U.Username = ? AND P.PostID = ?")
 	if err != nil {
-		return nil, fmt.Errorf("error while preparing the SQL statement for checking if the provided comment exists")
+		return err //fmt.Errorf("error while preparing the SQL statement to check if the given post is owned by the given user")
 	}
 
-	rows, err := stmt.Query(CommentID)
-	if err != nil {
-		return nil, fmt.Errorf("error while performing the query for checking if the provided comment exists")
-	} else {
-		defer rows.Close()
+	var author components.Username
+	if err = stmt.QueryRow(Username, PostID).Scan(&author.Value); err != nil {
+		// if err == sql.ErrNoRows {
+		// 	return err
+		// }
+		return err //fmt.Errorf("error while executing the SQL query to retrieve the username associated to the given Auth token")
 	}
 
-	valid := true
-	if !rows.Next() {
-		valid = false
-	}
-
-	return &valid, nil
-
-}
-
-func (db appdbimpl) CheckIfOwnerPost(Username string, PostID string) (*bool, error) {
-
-	stmt, err := db.c.Prepare("SELECT 1 FROM User U JOIN Post P ON U.Username = P.Author WHERE U.Username = ? AND P.PostID = ?")
-	if err != nil {
-		return nil, fmt.Errorf("error while preparing the SQL statement to check if the given post is owned by the given user")
-	}
-
-	rows, err := stmt.Query(Username, PostID)
-	if err != nil {
-		return nil, fmt.Errorf("error while executing the SQL query to retrieve the username associated to the given Auth token")
-	}
-
-	valid := true
-	if !rows.Next() {
-		valid = false
-	}
-
-	return &valid, nil
+	return nil
 
 }
 
@@ -77,12 +46,12 @@ func (db appdbimpl) AddLikeToPost(Username string, PostID string) error {
 
 	stmt, err := db.c.Prepare("INSERT INTO Like (PostID, Liker) VALUES (?, ?)")
 	if err != nil {
-		return fmt.Errorf("error while preparing the SQL statement to add the like")
+		return err //fmt.Errorf("error while preparing the SQL statement to add the like")
 	}
 
 	_, err = stmt.Query(PostID, Username)
 	if err != nil {
-		return fmt.Errorf("error while executing the query to add the like")
+		return err //fmt.Errorf("error while executing the query to add the like")
 	}
 
 	return nil
@@ -91,14 +60,14 @@ func (db appdbimpl) AddLikeToPost(Username string, PostID string) error {
 
 func (db appdbimpl) RemoveLikeFromPost(Username string, PostID string) error {
 
-	stmt, err := db.c.Prepare("DELETE FROM Like WHERE PostID = ? AND Liker = ?  ")
+	stmt, err := db.c.Prepare("DELETE FROM Like WHERE PostID = ? AND Liker = ?")
 	if err != nil {
-		return fmt.Errorf("error while preparing the SQL statement to add the like")
+		return err //fmt.Errorf("error while preparing the SQL statement to add the like")
 	}
 
 	_, err = stmt.Query(PostID, Username)
 	if err != nil {
-		return fmt.Errorf("error while executing the query to add the like")
+		return err //fmt.Errorf("error while executing the query to add the like")
 	}
 
 	return nil
@@ -107,17 +76,14 @@ func (db appdbimpl) RemoveLikeFromPost(Username string, PostID string) error {
 
 func (db appdbimpl) AddCommentToPost(PostID string, Body string, CreationDatetime string, Author string) error {
 
-	stmt, err := db.c.Prepare("INSERT INTO Comment (CommentID, PostID, Author, CreationDatetime, Comment) VALUES (?, ?, ?, CONVERT(DATETIME, ?), ?)")
+	stmt, err := db.c.Prepare("INSERT INTO Comment (PostID, Author, CreationDatetime, Comment) VALUES (?, ?, CONVERT(DATETIME, ?), ?)")
 	if err != nil {
-		return fmt.Errorf("error while preparing the SQL statement to add the comment")
+		return err //fmt.Errorf("error while preparing the SQL statement to add the comment")
 	}
 
-	// Generate the comment id
-	commentID := uniuri.NewLen(64)
-
-	_, err = stmt.Exec(commentID, PostID, Author, CreationDatetime, Body)
+	_, err = stmt.Query(PostID, Author, CreationDatetime, Body)
 	if err != nil {
-		return fmt.Errorf("error while executing the query to add the comment")
+		return err //fmt.Errorf("error while executing the query to add the comment")
 	}
 
 	return nil
@@ -128,12 +94,12 @@ func (db appdbimpl) RemoveCommentFromPost(PostID string, CommentID string) error
 
 	stmt, err := db.c.Prepare("DELETE FROM Comment WHERE PostID = ? AND CommentID = ?")
 	if err != nil {
-		return fmt.Errorf("error while preparing the SQL statement to remove the comment")
+		return err //fmt.Errorf("error while preparing the SQL statement to remove the comment")
 	}
 
 	_, err = stmt.Exec(PostID, CommentID)
 	if err != nil {
-		return fmt.Errorf("error while executing the query to remove the comment")
+		return err //fmt.Errorf("error while executing the query to remove the comment")
 	}
 
 	return nil

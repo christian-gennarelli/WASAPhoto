@@ -9,18 +9,19 @@ import (
 )
 
 type ID struct {
-	RandID string
+	Value string
 }
 
 type Username struct {
-	Uname string `json:"name"`
+	Value string `json:"name"`
 }
 
 type User struct {
-	UID       ID
-	UName     Username
-	Name      string
-	BirthDate time.Time
+	ID         string
+	ProfilePic string
+	Username   string
+	Birthdate  string
+	Name       string
 }
 
 type Profile struct {
@@ -35,7 +36,7 @@ type Profile struct {
 */
 
 type UserList struct {
-	Users []Username
+	Users []User
 }
 
 type Photo struct {
@@ -66,7 +67,7 @@ type CommentList struct {
 }
 
 type Error struct {
-	ErrorCode   string
+	ErrorCode   int
 	Description string
 }
 
@@ -75,30 +76,25 @@ func (Username Username) CheckIfValid() (*bool, error) {
 
 	regex, err := regexp.Compile(USERNAME_REGEXP)
 	if err != nil {
-		return nil, fmt.Errorf("error encountered while compiling the regexp for checking if the provided username is valid")
+		return nil, fmt.Errorf("error while compiling the regex for checking the validity of the provided username")
 	}
 
-	valid := true
-	if !regex.MatchString(Username.Uname) {
-		valid = false
-	}
-
+	valid := regex.MatchString(Username.Value)
 	return &valid, nil
-
 }
 
-func (Id ID) CheckIfValid() (*bool, error) {
+func (Id ID) CheckIfValid() error {
 
 	regex, err := regexp.Compile(ID_REGEXP)
 	if err != nil {
-		return nil, fmt.Errorf("error encountered while compiling the regexp for checking if the provided ID is valid")
+		return fmt.Errorf("error while compiling the regex for checking the validity of the provided ID")
 	}
 
-	valid := true
-	if !regex.MatchString(Id.RandID) {
-		valid = false
+	valid := regex.MatchString(Id.Value)
+	if valid {
+		return nil
+	} else {
+		return fmt.Errorf("id not valid")
 	}
-
-	return &valid, nil
 
 }
