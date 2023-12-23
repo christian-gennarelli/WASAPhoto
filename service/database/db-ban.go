@@ -2,7 +2,6 @@ package database
 
 import (
 	"bufio"
-	"database/sql"
 	"encoding/base64"
 	"io"
 	"os"
@@ -16,6 +15,7 @@ func (db appdbimpl) BanUser(bannerUsername string, bannedUsername string) error 
 	if err != nil {
 		return err //fmt.Errorf("error while preparing the statement to ban the user")
 	}
+	defer stmt.Close()
 
 	if _, err = stmt.Exec(bannerUsername, bannedUsername); err != nil {
 		return err //fmt.Errorf("errof while executing the statement to ban the user")
@@ -34,6 +34,7 @@ func (db appdbimpl) UnbanUser(bannerUsername string, bannedUsername string) erro
 	if err != nil {
 		return err //fmt.Errorf("error while preparing the statement to ban the user")
 	}
+	defer stmt.Close()
 
 	if _, err = stmt.Exec(bannerUsername, bannedUsername); err != nil {
 		return err //fmt.Errorf("errof while executing the statement to ban the user")
@@ -48,11 +49,13 @@ func (db appdbimpl) GetBanUserList(bannerUsername string) (*components.UserList,
 	if err != nil {
 		return nil, err
 	}
+	defer stmt.Close()
 
 	rows, err := stmt.Query(bannerUsername)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var bannedUserList components.UserList
 	for rows.Next() {
@@ -74,21 +77,19 @@ func (db appdbimpl) GetBanUserList(bannerUsername string) (*components.UserList,
 
 }
 
-func (db appdbimpl) CheckIfBanned(bannerUsername string, bannedUsername string) (*bool, error) {
+// Returns nil if banned (either of the two directions of the ban), err for some internal server error, sql.ErrNoRows if no ban has been found
+func (db appdbimpl) CheckIfBanned(bannerUsername string, bannedUsername string) error {
 
-	stmt, err := db.c.Prepare("SELECT Banned FROM Ban WHERE Banner = ? AND Banned = ?")
+	stmt, err := db.c.Prepare("SELECT Banned FROM Ban WHERE Banner = ? AND Banned = ? UNION SELECT Banner FROM Ban WHERE Banner = ? AND Banned = ?")
 	if err != nil {
-		return nil, err
+		return err
 	}
+	defer stmt.Close()
 
-	row, foo, valid := stmt.QueryRow(bannerUsername, bannedUsername), "", true
+	row, foo := stmt.QueryRow(bannerUsername, bannedUsername, bannedUsername, bannerUsername), ""
 	if err = row.Scan(&foo); err != nil {
-		if err == sql.ErrNoRows {
-			return &valid, nil
-		}
-		return nil, err
+		return err
 	}
 
-	valid = false
-	return &valid, nil
+	return nil
 }

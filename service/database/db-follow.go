@@ -62,6 +62,7 @@ func (db appdbimpl) GetFollowingList(followerUsername string) (*components.UserL
 			return nil, err //fmt.Errorf("error while scanning the result of the query")
 		}
 
+		// Open the image specified by the path saved in the record
 		img, _ := os.Open(user.ProfilePic)
 		reader := bufio.NewReader(img)
 		content, _ := io.ReadAll(reader)

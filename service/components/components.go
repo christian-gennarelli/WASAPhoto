@@ -3,7 +3,6 @@
 package components
 
 import (
-	"fmt"
 	"regexp"
 	"time"
 )
@@ -18,15 +17,15 @@ type Username struct {
 
 type User struct {
 	ID         string
-	ProfilePic string
 	Username   string
 	Birthdate  string
 	Name       string
+	ProfilePic string // Base64 encoded image
 }
 
 type Profile struct {
 	User  User
-	Posts []ID
+	Posts []Post
 }
 
 /*
@@ -39,14 +38,10 @@ type UserList struct {
 	Users []User
 }
 
-type Photo struct {
-	PhotoString string
-}
-
 type Post struct {
 	PostID           ID
 	Author           ID
-	Photo            Photo
+	Photo            string // URL path to the image, stored server-side
 	CreationDatetime time.Time
 	Description      string
 }
@@ -72,29 +67,31 @@ type Error struct {
 }
 
 // Check if the provided username is in the correct format
-func (Username Username) CheckIfValid() (*bool, error) {
+func (Username Username) CheckIfValid() error {
 
 	regex, err := regexp.Compile(USERNAME_REGEXP)
 	if err != nil {
-		return nil, fmt.Errorf("error while compiling the regex for checking the validity of the provided username")
+		return err
 	}
 
-	valid := regex.MatchString(Username.Value)
-	return &valid, nil
+	if !regex.MatchString(Username.Value) {
+		return ErrIDNotValid
+	}
+
+	return nil
 }
 
 func (Id ID) CheckIfValid() error {
 
 	regex, err := regexp.Compile(ID_REGEXP)
 	if err != nil {
-		return fmt.Errorf("error while compiling the regex for checking the validity of the provided ID")
+		return err
 	}
 
-	valid := regex.MatchString(Id.Value)
-	if valid {
-		return nil
-	} else {
-		return fmt.Errorf("id not valid")
+	if !regex.MatchString(Id.Value) {
+		return ErrUsernameNotValid
 	}
+
+	return nil
 
 }

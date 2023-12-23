@@ -18,38 +18,38 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 	if err != nil {
 		return nil, err // fmt.Errorf("error while preparing the SQL statement to obtain the info about the user with the provided username")
 	}
+	defer stmt.Close()
 
 	var user components.User
 	if err = stmt.QueryRow(Username).Scan(&user.Username, &user.Birthdate, &user.Name, &user.ProfilePic); err != nil {
-		// if err == sql.ErrNoRows {
-		// 	return nil, err
-		// }
-		img, _ := os.Open(user.ProfilePic)
-		reader := bufio.NewReader(img)
-		content, _ := io.ReadAll(reader)
-		user.ProfilePic = base64.StdEncoding.EncodeToString(content)
 		return nil, err //fmt.Errorf("error while executing the SQL statement to obtain the info about the user with the provided username")
 	}
 
+	// Open image and turn it into base64
+	img, _ := os.Open(user.ProfilePic)
+	reader := bufio.NewReader(img)
+	content, _ := io.ReadAll(reader)
+	user.ProfilePic = base64.StdEncoding.EncodeToString(content)
+
 	// Retrieve the photos posted by this user
-	stmt, err = db.c.Prepare("SELECT PostID FROM Post WHERE Author = ?")
+	stmt, err = db.c.Prepare("SELECT PostID, Author, Description, CreationDatetime, PhotoPath FROM Post WHERE Author = ?")
 	if err != nil {
 		return nil, err //fmt.Errorf("error while preparing the SQL statement to obtain the list of posts posted by the user")
 	}
 
-	postIDs, err := stmt.Query(Username)
+	rows, err := stmt.Query(Username)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err //fmt.Errorf("error while performing the query to obtain the list of posts posted by the user")
 	}
-	defer postIDs.Close()
+	defer rows.Close()
 
-	var posts []components.ID
-	for postIDs.Next() {
-		var postID components.ID
-		if err = postIDs.Scan(&postID); err != nil {
+	var posts []components.Post
+	for rows.Next() {
+		var post components.Post
+		if err = rows.Scan(&post.PostID, &post.Author, &post.Description, &post.CreationDatetime, &post.Photo); err != nil {
 			return nil, err //fmt.Errorf("error while extracting the posts from the query")
 		}
-		posts = append(posts, postID)
+		posts = append(posts, post)
 	}
 
 	profile := components.Profile{

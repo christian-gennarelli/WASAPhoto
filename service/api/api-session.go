@@ -18,11 +18,12 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	if contentType := r.Header.Get("Content-Type"); contentType != "application/json" {
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 		ctx.Logger.Error("unsupported media type provided")
-		if _, err := w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "Invalid Content-Type. Only application/json is supported").Error())); err != nil {
+		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnsupportedMediaType).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
+
 	var Username components.Username
 	err := json.NewDecoder(r.Body).Decode(&Username)
 	if err != nil {
@@ -35,26 +36,26 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	// Check if the provided username is valid
-	valid, err := Username.CheckIfValid()
+	err = Username.CheckIfValid()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+		var mess []byte
+		if err == components.ErrUsernameNotValid {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.WithError(err).Error("provided username not valid")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())
 		}
-		return
-	}
-	if !*valid {
-		w.WriteHeader(http.StatusBadRequest)
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
 
 	// Get the ID from the database
 	ID, err := rt.db.PostUserID(Username.Value)
-
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while parsing the id for the given user")

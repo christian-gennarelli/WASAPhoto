@@ -15,32 +15,22 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	w.Header().Set("Content-Type", "application/json")
 
 	// Parse the string we want to match in usernames
-	var searchedUsername components.Username
-
-	err := json.NewDecoder(r.Body).Decode(&searchedUsername)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while decoding the body of the request")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while decoding the body of the request" /*err*/).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return
-	}
+	searchedUsername := components.Username{Value: r.URL.Query().Get("searched-username")}
 
 	// Check if the provided username is valid
-	valid, err := searchedUsername.CheckIfValid()
+	err := searchedUsername.CheckIfValid()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
+		var mess []byte
+		if err == components.ErrUsernameNotValid {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.WithError(err).Error("provided username not valid")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())
 		}
-		return
-	}
-	if !*valid {
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.Error("provided username not valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())); err != nil {
+		if _, err = w.Write(mess); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return

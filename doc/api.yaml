@@ -20,15 +20,15 @@ components:
     ID:
       title: ID
       description: |-
-        Autoincrement int field used for identify a particular resource (a comment, a post, ecc.)
+        Autoincrement integer field used for identify a particular resource (a comment, a post, ecc.)
       type: integer
       example: 795739
 
     Username:
       title: Username
-      description: Username of a user, to be displayed when commenting and/or liking a photo
+      description: Username of a user
       type: string
-      example: "chrigenna02"
+      example: "chri_genna02"
       minLength: 8
       maxLength: 16
       pattern: '^[a-zA-Z0-9]([._-](?![._-])|[a-zA-Z0-9]){6,14}[a-zA-Z0-9]$'
@@ -36,16 +36,18 @@ components:
     User:
       title: User
       description: |-
-        User of our platform, with its UUID username, real name and date of birth.
+        A user in WASAPhoto is represented by a unique ID, its unique username, name and birthdate.
       properties:
         uuid:
           $ref: '#/components/schemas/ID'
         username:
           $ref: '#/components/schemas/Username'
+        profilePic:
+          $ref: "#/components/schemas/Photo"
         name:
           description: Real-life name/surname of the user
           type: string
-          pattern: '[a-zA-Z0-9 ]{2,32}''
+          pattern: ''
           minLength: 2
           maxLength: 32
           example: Christian Gennarelli 
@@ -53,21 +55,21 @@ components:
           description: Birthdate of the user
           type: string
           format: date
-          pattern:  '([0-9]{4})-(?:[0-9]{2})-([0-9]{2})'
-          example: "2002-10-01"
+          pattern: '([0-9]{4})-(?:[0-9]{2})-([0-9]{2})'
+          example: '2002-10-01'
           minLength: 10
           maxLength: 10
       
     UserList:
       title: UserList
       description: |-
-        Collection of users' usernames, to be used when we need to 
-        return the list of followers, following or likes on a photo.
+        Collection of users. 
+        A maximum number of 16 users is returned, according to some backend principle (example: datetime)
       type: array
       items:
-        $ref: '#/components/schemas/Username'  
+        $ref: '#/components/schemas/User'  
       minItems: 0
-      maxItems: 8   
+      maxItems: 16 
 
     Photo:
       title: Photo
@@ -75,24 +77,38 @@ components:
       type: string
       description: |-
         Binary representation of a photo, wrapped in a base64-encoded string. 
-      minLength: 160 # Approximately 119 B minimum photo size (encoded in base64)
-      maxLength: 44739244 # Approximately 32 MB maximum photo size (encoded in base64)
-      example: iVBORw0KGgbW8gY2hyaXN0aWFuCghyaXN0aWFuCgw0KGgbW8gYyaXN0aWFuCgw0KGgbW8gW8gYyaXN0aW8gYyaXN0aWFuCgw0KGGgbW8gY2hyaXN0aWFuCghy0aWFuCghyaXN0aWFuC8gY2hyaXN0aWFuCghyaXN0aWFuCgw0KGgbW8gYyaXN0aWFuCgw0KGgbW8gW8gYyaXN0
-    
+        Only profile pics are sent via base64 in JSON for efficiency reasons.
+        Other kind of images, like posts, will contain the URL to the actual
+        image stored on the server.
+      minLength: 0
+      maxLength: 2000000 # 2MB photo
+      example: iVBORw0KGgbW8gY2hyaXN0aWFuCghyaXN0aWFuCgw0KGgbW8gYyaXN0aWFuCgw0KGgbW8gW8gYyaXN0aW8gYyaXN0aWF
+
+    PhotoURL:
+      title: PhotoURL
+      type: string
+      description: |-
+        URL of the photo, actually stored on server-side.
+        The actual image will be sent as response of a separate request.
+      minLength: 45 # http://WASAPhotoserver.com/photos/posts/1.png
+      maxLength: 60 # http://WASAPhotoserver.com/photos/profile_pics/999999999.png
+      example: "http://WASAPhotoserver.com/photos/profile_pics/default.png"
     Profile:
       title: Profile
       description: |-
-        Profile of an user. It includes the user and IDs of the posts posted by such user.
+        Profile of an user, made up of its informations and the its posts on WASASPhoto.
       properties:
         user:
           $ref: "#/components/schemas/User"
         post_ids:
           type: array
-          description: Collection of the IDs of the post posted by the user of this profile.
+          description: |- 
+            Collection of the posts posted by this user.
+            At most 16 posts are returned at each request, according to some backend principle (example: datetime)
           items:
-            $ref: '#/components/schemas/ID'
+            $ref: '#/components/schemas/PostsStream'
           minItems: 0
-          maxItems: 999
+          maxItems: 16
 
     Post:
       title: Post
@@ -102,37 +118,38 @@ components:
         postid:
           $ref: '#/components/schemas/ID'
         photo: 
-          $ref: '#/components/schemas/Photo'
+          $ref: "#/components/schemas/PhotoURL"
         creation-datetime: # Useful for the representation of the poststream, which must be displayed in reverse chronological order
           description: |-
-            Date and time at which this post was created 
-            (useful for showing photos in reverse chronological order).
+            Date and time at which this post was created.
           example: "2023-11-29 23:00:00"
           type: string
           format: date-time
+          pattern: '([0-9]{4})-(?:[0-9]{2})-([0-9]{2}) ([0-9{2}]):([0-9{2}]):([0-9{2}])'
           minLength: 19
           maxLength: 19
         description:
-          description: Description of the photo provided by the user, when present.
+          description: Description of the photo provided by the user (if existing).
           type: string
           minLength: 0
           maxLength: 128
-          pattern: '^(.|\s)*[a-zA-Z]+(.|\s)*$'
+          pattern: ''
 
     PostsStream:
       title: Stream
       description: |-
-        Stream of posts displayed on the home page, with posts displayed in reverse chronological order.
+        Stream of posts.
+        Only 16 posts are returned at each request.
       type: array
       items:
         $ref: '#/components/schemas/Post'
       minItems: 0
-      maxItems: 8
+      maxItems: 16
 
     Comment:
       title: Comment
       description: |-
-        Comment on a post, with the body of the comments, its author and the datetime of creation.
+        Comment on a post, made up of its body, its author and the datetime of creation.
       properties:
         post_id:
           $ref: '#/components/schemas/ID'
@@ -141,13 +158,14 @@ components:
           type: string
           minLength: 1
           maxLength: 128
-          pattern: '/^(.|\s)*[a-zA-Z]+(.|\s)*$/'
+          pattern: ''
         creation-datetime: # Useful for the representation of the poststream, which must be displayed in reverse chronological order
           description: |-
             Date and time at which this comment was created.
           example: "2023-11-29 23:00:00"
           type: string
           format: date-time
+          pattern: '([0-9]{4})-(?:[0-9]{2})-([0-9]{2}) ([0-9{2}]):([0-9{2}]):([0-9{2}])'
           minLength: 19
           maxLength: 19
         author:
@@ -156,12 +174,13 @@ components:
     CommentList:
       title: CommentsList
       description: |-
-        A list of comments, displayed under a particular post.
+        A list of comments.
+        Only 16 comments are returned at each request.
       type: array
       items:
         $ref: '#/components/schemas/Comment'
       minItems: 0
-      maxItems: 999999
+      maxItems: 16
     
     Error:
       title: Error
@@ -178,11 +197,10 @@ components:
           type: string
           description: |- 
             Description of the error in human-readable language.
-            It may also contain possible solutions to make a new but valid requests.
           example: 'Username not found. Please check that the username is correct, and try again.'
           minLength: 1
           maxLength: 128
-          pattern: '/^(.|\s)*[a-zA-Z]+(.|\s)*$/'
+          pattern: ''
 
 paths:
   /session:
@@ -195,7 +213,7 @@ paths:
         and an identifier is returned.
         If the user exists, the user identifier is returned.
       requestBody:
-        description: User details
+        description: User details (here, just the username)
         content:
           application/json:
             schema:
@@ -233,7 +251,7 @@ paths:
       tags: ['USER']
       summary: Search for a user
       description: |-
-        A particular user - here, "username" - can research another user - here, "researched-user" - 
+        A particular user - here, "username" - can research another user - here, "searched-user" - 
         or a set of users by their usernames matching the substring provided.
       responses:
         '200': # OK
@@ -278,13 +296,13 @@ paths:
           $ref: '#/components/schemas/Username'
         required: true
       - in: query
-        name: startDatetime
+        name: start-datetime
         description: |-   
           Datetime up to which posts will be included in the user's stream.
           (The ending datetime is implicit: now! In this way, in the stream
-          will be inclued all photos posted from 'startDatetime' up to now.)
+          will be inclued all photos posted from 'start-datetime' up to now.)
         schema: 
-          description: Lower bound datetime
+          description: Starting datetime
           type: string
           format: date-time
           pattern:  '/([0-9]{4})-(?:[0-9]{2})-([0-9]{2}) ([0-9]{2}):(?:[0-9]{2}):([0-9]{2})/'
@@ -315,7 +333,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '401': # Unauthenticated
-          description: The client has not been authenticated (yet).
+          description: The client is NOT authenticated.
           content:
             application/json:
               schema:
@@ -323,13 +341,7 @@ paths:
         '403': # Unauthorized
           description: |-
             The client is not authorized to see the stream of another user.
-            That is, the authenticated user's username and the one provided in the path do NOT coincide.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404': # Content not found
-          description: Username has not been found.
+            That is, the authenticated username and the one provided in the path do NOT coincide.
           content:
             application/json:
               schema:
@@ -357,6 +369,8 @@ paths:
       description: |-
         Return all the informations about the specified user, 
         included its username, real name and date of birth.
+      security:
+        - BearerAuth: [] # We ask for the Auth token to check if the user has -been- banned
       responses:
         '200': # OK - Profile found
             description: Returned profile of the searched user.
@@ -370,10 +384,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401': # Unauthenticated
+          description: User is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403': # Unauthorized
+          description: Authenticated user is not authorized to see the profile of the requested user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404': # Profile not found
           description: |-
               No user has been found with the provided username, 
-              thus no information can be returned. 
+              thus no information can be returned.
           content:
             application/json:
               schema:
@@ -390,21 +416,18 @@ paths:
       tags: ['PROFILE']
       summary: Update username
       description: |-
-        It allows for a particular user to change its username, with a new one
-        (provided that the new one is not already used).
+        A user can change its username with a new one
+        (provided that the new one is valid and not already used).
       security:
         - BearerAuth: []
-      requestBody:
-        description: |-
-          New username, that the user would like to use from now on.
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Username'
-        required: true
+      parameters:
+        - in: query
+          name: new-username
+          schema:
+            $ref: '#/components/schemas/Username'
       responses: 
-        '201': # OK
-          description: The new username of this user.
+        '201': # OK - Username updated
+          description: New username of this user.
           content:
             application/json:
               schema:
@@ -424,7 +447,7 @@ paths:
         '403': # Unauthorized
           description: |-
             The authenticated user cannot change the username of another user.
-            That is, the authenticated user's username and the one provided in the path do NOT coincide.
+            That is, the authenticated username and the one provided in the path do NOT coincide.
           content:
             application/json:
               schema:
@@ -455,7 +478,7 @@ paths:
     parameters:
       - in: path
         name: username
-        description: The user's username.
+        description: Username provided in the path.
         schema:
           $ref: '#/components/schemas/Username'
         required: true
@@ -466,21 +489,20 @@ paths:
       tags: ['POST']
       description: |-
           The user can upload a new post for its own profile. 
-          The photo and description are needed, but server-side the ID and the CreationDatetime will be automatically generated.
+          The photo and its description must be sent by the client.
       security:
         - BearerAuth: []
       requestBody:
         description: |- 
-          The post to be uploaded.
-          (the creation datetime will be automatically generated by the server).
+          The photo to be uploaded, along with its description (if wanted).
         content:
           multipart/form-data:
             schema:
               description: Photo and its description.
-              type: object  
+              type: object
               properties:
                 photo:
-                  $ref: '#/components/schemas/Photo'
+                  $ref: "#/components/schemas/Photo"
                 description: 
                   $ref: '#/components/schemas/Comment'
       responses:
@@ -493,7 +515,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '401': # Unauthenticated
-          description: The client has not been authenticated (yet).
+          description: The client is NOT authenticated.
           content:
             application/json:
               schema:
@@ -501,7 +523,7 @@ paths:
         '403': # Unauthorized
           description: |-
             The authenticated user cannot upload a new post on some other user's profile.
-            That is, the authenticated user's username and the one provided in the path do NOT coincide.
+            That is, the authenticated username and the one provided in the path do NOT coincide.
           content:
             application/json:
               schema:
@@ -509,13 +531,6 @@ paths:
         '404': # Username not found
           description: |-
             The user who wants to post a photos on its profile has not been found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '406': # Not acceptable
-          description: |-
-            The provided photo cannot be uploaded due to some checks performed on the server.
           content:
             application/json:
               schema:
@@ -549,7 +564,7 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '204': # OK
+        '204': # OK - No content to be returned
           description: User successfully deleted one of its posts.
         '400': # Bad request
           description: Bad request provided.
@@ -558,7 +573,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '401': # Unauthenticated
-          description: The client has not been authenticated (yet).
+          description: The client is NOT authenticated.
           content:
             application/json:
               schema:
@@ -566,7 +581,7 @@ paths:
         '403': # Unauthorized
           description: |-
             The authenticated user cannot delete a photo of another user.
-            That is, the authenticated user's username and the one provided in the path do NOT coincide.
+            That is, the authenticated username and the one provided in the path do NOT coincide.
           content:
             application/json:
               schema:
@@ -602,25 +617,42 @@ paths:
       summary: Get list of likes of a post
       tags: ['POST']
       description: |-
-        Return the lists of users which liked post with id 'post_id'.
+        Return the list of users which liked the provided post.
+      security:
+        - BearerAuth: []
       responses:
         '201': # OK Found
           description: |-
-            Everything went correctly, and the list of users liking that post is returned.
+            The list of users liking the provided post is correctly returned.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserList'
         '204': # No content found
-          description: No users liked the post.
+          description: No user liked the given post.
         '400': # Bad request
           description: Bad request provided.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401': # Unauthenticated
+          description: The client is NOT authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403': # Unauthorized
+          description: |-
+            The authenticated user banned the owner of the post, or viceversa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404': # Username or post not found
-          description: Either the post to be liked or the post's owner has not been found.
+          description: |- 
+            Either the post to be liked or the username has not been found. 
+            Alternatively, the username provided in the path does not own the given post.
           content:
             application/json:
               schema:
@@ -640,15 +672,9 @@ paths:
         Authenticated users can like other users' posts.
       security:
         - BearerAuth: []
-      # parameters:
-      #- in: header
-      #  name: liker_username
-      #  description: Username of the authenticated user that wants to like the post of user 'username'.
-      #  schema:
-      #    $ref: '#/components/schemas/Username'
       responses:
-        '204': # OK Created
-          description: User 'liker_username' successfully liked 'username's photo.
+        '204': # OK - Photo liked
+          description: Authenticated user successfully liked the provided post.
         '400': # Bad request
           description: Bad request provided.
           content:
@@ -656,21 +682,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '401': # Unauthenticated
-          description: The client has not been authenticated (yet).
+          description: The client is NOT authenticated.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '403': # Unauthorized
           description: |-
-            The authenticated user cannot like a post on behalf of some other user.
-            That is, the authenticated user's username and liker_username do NOT coincide.
+            The authenticated user banned the owner of the post, or viceversa.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404': # Content not found
-          description: Either the username, the post or the liker username have not been found.
+          description: |-
+            Either the username or the post have not been found.
+            Alternatively, the username in the path does NOT own the provided post.
           content:
             application/json:
               schema:
@@ -682,24 +709,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /users/{username}/profile/posts/{post_id}/likes/{liker_username}: # We don't need to distinguish between "different likes", like for comments - there can be just a single like for each user per photo
+  /users/{username}/profile/posts/{post_id}/likes/{liker_username}:
     parameters:
       - in: path
         name: username
         schema:
           $ref: '#/components/schemas/Username'
-        description: Username of the post's owner from which liker_username wants to remove its like from.
+        description: Username of the owner of the post
         required: true
       - in: path
         name: post_id
         schema:
           $ref: '#/components/schemas/ID'
+        description: ID of the post
         required: true
       - in: path
         name: liker_username
-        description: Username of the user that liked username's post with id post_id and now wants to delete its like from it.
         schema:
           $ref: '#/components/schemas/Username'
+        description: Username of the user that liked username's post with id post_id and now wants to delete its like from it.
         required: true
 
     delete:
@@ -720,7 +748,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '401': # Unauthenticated
-          description: The client has not been authenticated (yet).
+          description: The client is NOT authenticated.
           content:
             application/json:
               schema:
@@ -728,13 +756,13 @@ paths:
         '403': # Unauthorized
           description: |-
             The authenticated user cannot unlike the post on behalf of another user.
-            That is, the authenticated user's username and the one provided in the path do NOT coincide.
+            That is, the authenticated username and the liker one do NOT coincide.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404': # Username or post not found
-          description: Either the post to be unliked or the owner of the post has not been found.
+          description: Either the post to be unliked or the owner of the post ha not been found.
           content:
             application/json:
               schema:
@@ -758,12 +786,15 @@ paths:
         schema:
           $ref: '#/components/schemas/ID'
         required: true
+
     get:
       operationId: getPostComments
       tags: ['POST']
       summary: Get comments under a post
       description: |-
         Return the list of the comments under the post with id 'post_id' of 'username'.
+      security:
+        - BearerAuth: []
       responses:
         '200': # OK
             description: Return the list of comments under the post.
@@ -771,14 +802,29 @@ paths:
               application/json:
                 schema: 
                   $ref: '#/components/schemas/CommentList'
+        '201': # No content
+          description: No comment was found under the given post.
         '400': # Bad request
           description: The request cannot be processed.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401': # Unauthenticated
+          description: The client is NOT authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403': # Unauthorized
+          description: |-
+            The authenticated user banned the owner of the post, or viceversa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404': # User or pst not found
-          description: Either the post or the post's owner has not been found.
+          description: Either the post or the username provided in the path has not been found.
           content:
             application/json:
               schema:
@@ -795,22 +841,19 @@ paths:
       tags: ['POST']
       summary: Comment a post
       description: |-
-        A new comment, with all of its properties (especially the author 
-        of the comment), is created under post 'post_id' of user 'username'.
-        ('comment_id' must be automatically generated by the server.)
+        A new comment is created under the post of the given user provided in the path.
+        Just the body of the comment must be provided (along with the Auth token).
       security:
         - BearerAuth: []
-      parameters:
-        - in: header
-          name: commenter_username
-          schema:
-            $ref: '#/components/schemas/Username'
-          required: true
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Comment'
+              description: Content of the posted comment
+              type: string
+              minLength: 1
+              maxLength: 128
+              pattern: ''
       responses:
         '204': # OK Created
           description: User 'commenter_username' successfully commented 'username's photo.
@@ -821,20 +864,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '401': # Unauthenticated
-          description: The client has not been authenticated (yet).
+          description: The client is NOT authenticated.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '403': # Unauthorized
           description: |-
-            The authenticated user cannot comment a post on behalf of some other user.
+            The authenticated user banned the owner of the post, or viceversa.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404': # Content not found
-          description: Either the username, the post or the commenter username have not been found.
+          description: Either the username or the post has not been found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '415': # Unsupported media type
+          description: |-
+            The content of the request body should be in JSON.
           content:
             application/json:
               schema:
@@ -868,13 +918,13 @@ paths:
       operationId: uncommentPhoto
       summary: Uncomment a post
       description: |-
-        The comment with id 'comment_id' under post 'post_id' of 'username' is now removed.
+        Delete a comment under a post.
       tags: ['POST']
       security:
         - BearerAuth: []
       responses:
         '204': # OK
-          description: User successfully deleted its own comment under the post.
+          description: Authenticated user successfully deleted (one of) its own comment(s) under the post.
         '400': # Bad request
           description: Bad request provided.
           content:
@@ -882,7 +932,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '401': # Unauthenticated
-          description: The client has not been authenticated (yet).
+          description: The client is NOT authenticated.
           content:
             application/json:
               schema:
@@ -890,12 +940,13 @@ paths:
         '403': # Unauthorized
           description: |-
             The authenticated user cannot delete a comment of another user.
+            That is, the authenticated username and the one provided in the path do NOT coincide.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404': # Username or post not found
-          description: Either the post to be uncommented or the owner of the post has not been found.
+          description: Either the post or the owner of the post has not been found.
           content:
             application/json:
               schema:
@@ -907,7 +958,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /users/{username}/following/:
+  /users/{username}/followings/:
     parameters:
       - in: path
         name: username
@@ -918,13 +969,15 @@ paths:
     get:
       operationId: getFollowingList
       tags: ['FOLLOW']
-      summary: Get the follower list
+      summary: Get the following list
       description: |-
         Return the list of the users that username follows.
+      security:
+        - BearerAuth: []
       responses:
         '200': # OK Found
           description: |-
-            Everything went correctly.
+            The following list if correctly returned.
           content:
             application/json:
               schema:
@@ -933,6 +986,19 @@ paths:
           description: This user does not follow any user.
         '400': # Bad request
           description: Bad request provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401': # Unauthenticated
+          description: The client is NOT authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403': # Unauthorized
+          description: |-
+            The authenticated user banned the user provided in the path, or viceversa.
           content:
             application/json:
               schema:
@@ -955,14 +1021,13 @@ paths:
       summary: Follow a new user
       tags: ['FOLLOW']
       description: |-
-        Add a new user - here, 'following_username', requested in the body - in the list of the following users for 'username'.
+        Add the user provided in the query to the followings list of the authenticated user.
       security:
         - BearerAuth: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Username'
+      parameters:
+        - in: query
+          name: followed-username
+          $ref: '#/components/schemas/Username'
       responses:
         '204': # OK Created
           description: User 'username' successfully started to follow 'following_username'.
@@ -973,7 +1038,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '401': # Unauthenticated
-          description: The client has not been authenticated (yet).
+          description: The client is NOT authenticated.
           content:
             application/json:
               schema:
@@ -982,12 +1047,13 @@ paths:
           description: |-
             The authenticated user cannot follow another user on behalf of some other user.
             That is, the authenticated user's username and the one provided in the path do NOT coincide.
+            Alternatively, it could happen that the authenticated user banned the user is trying to follow, or viceversa.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404': # Content not found
-          description: Either the username, the post or the liker username have not been found.
+          description: The username has not been found.
           content:
             application/json:
               schema:
@@ -999,7 +1065,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
   
-  /users/{username}/followers/{following_username}:
+  /users/{username}/followings/{followed_username}:
     parameters:
         - in: path
           name: username
@@ -1007,7 +1073,7 @@ paths:
             $ref: '#/components/schemas/Username'
           required: true
         - in: path
-          name: following_username
+          name: followed_username
           schema:
             $ref: '#/components/schemas/Username'
           required: true
@@ -1017,12 +1083,12 @@ paths:
       tags: ['FOLLOW']
       summary: Unfollow an user
       description: |-
-        Delete a user from the list of the following user.
+        Delete the authenticated user from the list of followings of the one provided in the path.
       security:
         - BearerAuth: []
       responses:
         '204': # OK
-          description: User successfully unfollowed the user.
+          description: The authenticated user successfully unfollowed the user.
         '400': # Bad request
           description: Bad request provided.
           content:
@@ -1030,20 +1096,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '401': # Unauthenticated
-          description: The client has not been authenticated (yet).
+          description: The client is NOT authenticated.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '403': # Unauthorized
           description: |-
-            The authenticated user cannot delete a comment of another user.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404': # Username or post not found
-          description: Either the post to be uncommented or the owner of the post has not been found.
+            The authenticated user cannot unfollow an user on behalf of another user.
+            That is, the authenticated username and the one provided in the path do NOT coincide.
           content:
             application/json:
               schema:
@@ -1073,7 +1134,7 @@ paths:
         - BearerAuth: []
       responses:
         '200': # OK
-          description: List successfully returned.
+          description: Followers list successfully returned.
           content:
             application/json:
               schema:
@@ -1084,15 +1145,123 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401': # Unauthenticated
+          description: The client is NOT authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403': # Unauthorized
           description: |-
-            The authenticated user cannot delete a comment of another user.
+            The authenticated user banned the username provided in the path, or viceversa.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404': # Username or post not found
           description: Either the post to be uncommented or the owner of the post has not been found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500': # Internal server error.
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /users/{username}/banned/:
+    parameters:
+        - in: path
+          name: username
+          schema:
+            $ref: '#/components/schemas/Username'
+          required: true
+
+    get:
+      operationId: getBanUserList
+      tags: ['BAN']
+      summary: Return user banlist.
+      description: |-
+        Return the list of banned users for the specified user.
+      security:
+        - BearerAuth: []
+      responses:
+        '201': # OK
+          description: The list of banned users is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserList'
+        '204':
+          description: The user has banned no other user.
+        '400': # Bad request
+          description: Bad request provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401': # Unauthenticated
+          description: The client is NOT authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403': # Unauthorized
+          description: |-
+            The authenticated user cannot see banned users of some other user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500': # Internal server error.
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put: 
+      operationId: banUser
+      tags: ['BAN']
+      summary: Ban a new user
+      description: |-
+        Add a new user - here, 'ban_username' - in the list of the banned users for 'username'.
+      parameters:
+        - in: query
+          name: banned_username
+          description: Username of the user that must be added to the list of the banned users for this user.
+          schema:
+            $ref: '#/components/schemas/Username'
+          required: true
+      security:
+        - BearerAuth: []
+      responses:
+        '204': # OK Created
+          description: User 'banned_username' has been successfully added to the ban list.
+        '400': # Bad request
+          description: Bad request provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401': # Unauthenticated
+          description: The client has not been authenticated (yet).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403': # Unauthorized
+          description: |-
+            The authenticated user cannot ban another user on behalf of some other user.
+            That is, the authenticated user's username and banned_username do NOT coincide.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404': # Content not found
+          description: Either one of the two usernames has not been found.
           content:
             application/json:
               schema:
@@ -1148,12 +1317,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '404': # Username or post not found
-          description: Either the username or the banned user have not been found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
         '500': # Internal server error.
           description: Internal server error.
           content:
@@ -1161,102 +1324,49 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
   
-  /users/{username}/banned/:
+  /photos/{photo_path}:
     parameters:
-        - in: path
-          name: username
-          schema:
-            $ref: '#/components/schemas/Username'
-          required: true
-
-    get:
-      operationId: getBanUserList
-      tags: ['BAN']
-      summary: Return user banlist.
-      description: |-
-        Return the list of banned users for the specified user.
-      security:
-        - BearerAuth: []
-      responses:
-        '204': # OK
-          description: OK
-        '400': # Bad request
-          description: Bad request provided.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401': # Unauthenticated
-          description: The client has not been authenticated (yet).
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403': # Unauthorized
-          description: |-
-            The authenticated user cannot see banned users of some other user.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404': # Resource not found
-          description: Username provided not found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500': # Internal server error.
-          description: Internal server error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+      - in: path
+        name: photo_path
+        description: |-
+          URL path of the requested photo.
+        schema:
+          type: string
+          minLength: 11 # 6 (posts/) + 4 (x.png) -> posts/1.png
+          maxLength: 33 # 13 ("profile_pics/") + 16 (max username length) -> profile_pics/wasaphotoexample.png
+          pattern: ''
+          example: "profile_pics/wasaphotoexample.png"
+        required: true
     
-    put: 
-      operationId: banUser
-      tags: ['BAN']
-      summary: Ban a new user
+    get:
+      operationId: GetPhotoFromURL
+      tags: ['PHOTO']
+      summary: Get the requested photo
       description: |-
-        Add a new user - here, 'ban_username' - in the list of the banned users for 'username'.
-      parameters:
-        - in: query
-          name: banned_username
-          description: Username of the user that must be added to the list of the banned users for this user.
-          schema:
-            $ref: '#/components/schemas/Username'
-          required: true
-      security:
-        - BearerAuth: []
+        Given the URL path to the server resource representing the requested photo,
+        sent it to the requesting client.
       responses:
-        '204': # OK Created
-          description: User 'banned_username' has been successfully added to the ban list.
+        '200': # OK 
+          description: The photo was found, thus sent to the client.
+          content:
+            image/png:
+              schema: 
+                description: Requested photo (in PNG).
+                type: string
+                format: binary
         '400': # Bad request
-          description: Bad request provided.
+          description: Provided path not valid.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '401': # Unauthenticated
-          description: The client has not been authenticated (yet).
+        '404': # Photo not found
+          description: Requested photo has not been found.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '403': # Unauthorized
-          description: |-
-            The authenticated user cannot ban another user on behalf of some other user.
-            That is, the authenticated user's username and banned_username do NOT coincide.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404': # Content not found
-          description: Either the username or the banned username have not been found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500': # Internal server error.
+        '500': # Internal server error
           description: Internal server error.
           content:
             application/json:

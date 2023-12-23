@@ -54,7 +54,6 @@ type AppDatabase interface {
 	UpdateUsername(NewUsername string, OldUsername string) error
 
 	// Post queries
-	CheckIfPostExists(PostID string) error
 	CheckIfOwnerPost(Username string, PostID string) error
 	AddLikeToPost(Username string, PostID string) error
 	RemoveLikeFromPost(Username string, PostID string) error
@@ -74,7 +73,7 @@ type AppDatabase interface {
 	BanUser(bannerUsername, bannedUsername string) error
 	UnbanUser(bannerUsername, bannedUsername string) error
 	GetBanUserList(bannerUsername string) (*components.UserList, error)
-	CheckIfBanned(bannerUsername string, bannedUsername string) (*bool, error)
+	CheckIfBanned(bannerUsername string, bannedUsername string) error
 }
 
 type appdbimpl struct {
@@ -103,7 +102,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 	CREATE TABLE IF NOT EXISTS User (
 		ID STRING UNIQUE NOT NULL,
 		Username STRING PRIMARY KEY NOT NULL,
-		ProfilePicPath STRING DEFAULT './photos/profile_pics/default.png',
+		ProfilePicPath STRING DEFAULT 'http://localhost:3000/photos/profile_pics/default.png',
 		Birthdate DATE,
 		Name STRING
 	);
@@ -112,6 +111,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 		Author VARCHAR(16) UNIQUE NOT NULL,
 		CreationDatetime DATETIME,
 		Description VARCHAR(128),
+		PhotoPath STRING, 
 		FOREIGN KEY (Author) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
 	);
 	CREATE TABLE IF NOT EXISTS Like (
