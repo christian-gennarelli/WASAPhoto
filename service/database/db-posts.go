@@ -87,3 +87,29 @@ func (db appdbimpl) RemoveCommentFromPost(PostID string, CommentID string) error
 	return nil
 
 }
+
+func (db appdbimpl) GetUserStream(startDatetime string, username string) (*components.Stream, error) {
+
+	stmt, err := db.c.Prepare("SELECT * FROM Post P JOIN Follow F ON P.Author = F.Followed WHERE F.Follower = ? AND P.CreationDatetime <= ? ORDER BY P.CreationDatetime DESC LIMIT 16")
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(username, startDatetime)
+	if err != nil {
+		return nil, err
+	}
+
+	var postStream components.Stream
+	for rows.Next() {
+		var post components.Post
+		if err := rows.Scan(&post.PostID, &post.Author, &post.CreationDatetime, &post.Description, &post.Photo); err != nil {
+			return nil, err
+		}
+		postStream.Posts = append(postStream.Posts, post)
+	}
+
+	return &postStream, nil
+
+}

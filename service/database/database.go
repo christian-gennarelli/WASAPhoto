@@ -59,6 +59,7 @@ type AppDatabase interface {
 	RemoveLikeFromPost(Username string, PostID string) error
 	AddCommentToPost(PostID string, Body string, CreationDatetime string, Author string) error
 	RemoveCommentFromPost(PostID string, CommentID string) error
+	GetUserStream(startDatetime string, username string) (*components.Stream, error)
 
 	// Profile queries
 	GetUserProfile(Username string) (*components.Profile, error)

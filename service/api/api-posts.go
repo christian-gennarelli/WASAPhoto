@@ -276,3 +276,87 @@ func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps http
 	w.WriteHeader(http.StatusNoContent)
 
 }
+
+func (rt _router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// Retrieve the username of the authenticated user
+	usernameAuth := helperAuth(w, r, ps, ctx, rt)
+	if usernameAuth == nil {
+		return
+	}
+
+	// Retrieve the username from the path and check if it's valid
+	username := components.Username{Value: ps.ByName("username")}
+	if err := username.CheckIfValid(); err != nil {
+		var mess []byte
+		if err == components.ErrUsernameNotValid {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.WithError(err).Error("provided username not valid")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid").Error())
+		}
+		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	// Check that the username from the path and the authenticated username is the same
+	if usernameAuth.Value != username.Value {
+		w.WriteHeader(http.StatusForbidden)
+		ctx.Logger.Error("authenticated user cannot see the stream of another user")
+		if _, err := w.Write([]byte(fmt.Errorf(components.StatusForbidden, "authenticated user cannot see the stream of another user").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	// Retrieve the starting datetime (the last 16 posts between the provided datetime and the current one will be returned)
+	startDatetime := r.URL.Query().Get("start-datetime")
+	if len(startDatetime) == 0 {
+		startDatetime = time.Now().Format("2006-01-02 15:04:05")
+	}
+
+	// Retrieve the stream of the user
+	postStream, err := rt.db.GetUserStream(startDatetime, username.Value)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while retrieving the stream for the given user")
+		if _, err := w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while retrieving the stream for the given user").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	// Encode the response as JSON
+	response, err := json.MarshalIndent(postStream.Posts, "", " ")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while encoding the response as JSON")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while encoding the response as JSON").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	// Send the response to the client, if not empty
+	if len(postStream.Posts) > 0 {
+		w.WriteHeader(http.StatusOK)
+		if _, err = w.Write(response); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while writing the response")
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while writing the response").Error())); err != nil {
+				ctx.Logger.WithError(err).Error("error while writing the response")
+			}
+			return
+		}
+	} else {
+		w.WriteHeader(http.StatusNoContent)
+	}
+
+}

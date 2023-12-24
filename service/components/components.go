@@ -47,7 +47,7 @@ type Post struct {
 }
 
 type Stream struct {
-	Posts []ID
+	Posts []Post
 }
 
 type Comment struct {
