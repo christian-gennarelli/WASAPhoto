@@ -1,6 +1,10 @@
 package database
 
 import (
+	"database/sql"
+	"strconv"
+	"time"
+
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
 )
 
@@ -90,7 +94,7 @@ func (db appdbimpl) RemoveCommentFromPost(PostID string, CommentID string) error
 
 func (db appdbimpl) GetUserStream(startDatetime string, username string) (*components.Stream, error) {
 
-	stmt, err := db.c.Prepare("SELECT * FROM Post P JOIN Follow F ON P.Author = F.Followed WHERE F.Follower = ? AND P.CreationDatetime <= ? ORDER BY P.CreationDatetime DESC LIMIT 16")
+	stmt, err := db.c.Prepare("SELECT P.PostID, P.Author, P.CreationDatetime, P.Description, P.PhotoPath FROM Post P JOIN Follow F ON P.Author = F.Followed WHERE F.Follower = ? AND P.CreationDatetime <= ? ORDER BY P.CreationDatetime DESC LIMIT 16")
 	if err != nil {
 		return nil, err
 	}
@@ -104,12 +108,45 @@ func (db appdbimpl) GetUserStream(startDatetime string, username string) (*compo
 	var postStream components.Stream
 	for rows.Next() {
 		var post components.Post
-		if err := rows.Scan(&post.PostID, &post.Author, &post.CreationDatetime, &post.Description, &post.Photo); err != nil {
+		if err := rows.Scan(&post.PostID.Value, &post.Author.Value, &post.CreationDatetime, &post.Description, &post.Photo); err != nil {
 			return nil, err
 		}
 		postStream.Posts = append(postStream.Posts, post)
 	}
 
 	return &postStream, nil
+
+}
+
+func (db appdbimpl) UploadPost(username string, description string) (error, *components.Post) {
+
+	var id int
+	if err := db.c.QueryRow("SELECT PostID FROM Post ORDER BY PostID DESC LIMIT 1").Scan(&id); err != nil {
+		if err == sql.ErrNoRows {
+			id = 0
+		} else {
+			return err, nil
+		}
+	}
+
+	stmt, err := db.c.Prepare("INSERT INTO Post (Author, CreationDatetime, Description, PhotoPath) VALUES (?, ?, ?, ?)")
+	if err != nil {
+		return err, nil
+	}
+
+	t := time.Now()
+	creationDatetime := strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
+	photoPath := "photos/posts/" + username + "_" + strconv.Itoa(id+1) + ".png"
+	if _, err := stmt.Exec(username, creationDatetime, description, photoPath); err != nil {
+		return err, nil
+	}
+
+	return nil, &components.Post{
+		PostID:           components.ID{Value: strconv.Itoa(id + 1)},
+		Author:           components.Username{Value: username},
+		CreationDatetime: creationDatetime,
+		Description:      description,
+		Photo:            photoPath,
+	}
 
 }

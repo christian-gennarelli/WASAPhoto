@@ -4,7 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
@@ -319,7 +322,8 @@ func (rt _router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprou
 	// Retrieve the starting datetime (the last 16 posts between the provided datetime and the current one will be returned)
 	startDatetime := r.URL.Query().Get("start-datetime")
 	if len(startDatetime) == 0 {
-		startDatetime = time.Now().Format("2006-01-02 15:04:05")
+		t := time.Now()
+		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "T" + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
 	}
 
 	// Retrieve the stream of the user
@@ -357,6 +361,106 @@ func (rt _router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprou
 		}
 	} else {
 		w.WriteHeader(http.StatusNoContent)
+	}
+
+}
+
+func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+
+	// Retrieve the username of the authenticated user
+	usernameAuth := helperAuth(w, r, ps, ctx, rt)
+	if usernameAuth == nil {
+		return
+	}
+
+	// Retrieve the username from the path and check if it's valid
+	username := components.Username{Value: ps.ByName("username")}
+	err := username.CheckIfValid()
+	if err != nil {
+		var mess []byte
+		if err == components.ErrUsernameNotValid {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.WithError(err).Error("provided username not valid")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid").Error())
+		}
+		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	// Check if the username in the path and the authenticated one are the same
+	if username.Value != usernameAuth.Value {
+		w.WriteHeader(http.StatusForbidden)
+		ctx.Logger.Error("authenticated user cannot post a photo on the profile of another user")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusForbidden, "authenticated user cannot post a photo on the profile of another user").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	// Retrieve the post from the request body
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while decoding the body of the request")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while decoding the body of the request").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+	// Access the request body
+	formData := r.MultipartForm
+
+	// Accessing the photo file
+	photo := formData.File["photo"][0]
+	// Open the file
+	fileReader, err := photo.Open()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while opening the photo sent in the request")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while opening the photo sent in the request").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+	defer fileReader.Close()
+
+	// Accessing the description field
+	description := formData.Value["description"][0]
+
+	err, post := rt.db.UploadPost(username.Value, description)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while posting the photo")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while posting the photo").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+	// Save the file locally
+	uploadedFile, err := os.Create(post.Photo)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while loading the photo locally")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while loading the photo locally").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+	defer uploadedFile.Close()
+	// Copy the file content to the local file
+	_, err = io.Copy(uploadedFile, fileReader)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while copying the photo locally")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while copying creating the photo locally").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
 	}
 
 }

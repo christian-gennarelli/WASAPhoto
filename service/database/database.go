@@ -60,6 +60,7 @@ type AppDatabase interface {
 	AddCommentToPost(PostID string, Body string, CreationDatetime string, Author string) error
 	RemoveCommentFromPost(PostID string, CommentID string) error
 	GetUserStream(startDatetime string, username string) (*components.Stream, error)
+	UploadPost(username string, description string) (error, *components.Post)
 
 	// Profile queries
 	GetUserProfile(Username string) (*components.Profile, error)
@@ -104,19 +105,19 @@ func New(db *sql.DB) (AppDatabase, error) {
 		ID STRING UNIQUE NOT NULL,
 		Username STRING PRIMARY KEY NOT NULL,
 		ProfilePicPath STRING DEFAULT 'http://localhost:3000/photos/profile_pics/default.png',
-		Birthdate DATE,
+		Birthdate STRING,
 		Name STRING
 	);
 	CREATE TABLE IF NOT EXISTS Post (
-		PostID INTEGER AUTO_INCREMENT PRIMARY KEY,
-		Author VARCHAR(16) UNIQUE NOT NULL,
-		CreationDatetime DATETIME,
+		PostID INTEGER PRIMARY KEY AUTOINCREMENT,
+		Author VARCHAR(16) NOT NULL,
+		CreationDatetime STRING,
 		Description VARCHAR(128),
 		PhotoPath STRING, 
 		FOREIGN KEY (Author) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
 	);
 	CREATE TABLE IF NOT EXISTS Like (
-		PostID INTEGER AUTO_INCREMENT INTEGER,
+		PostID INTEGER NOT NULL,
 		Liker STRING NOT NULL,
 		PRIMARY KEY (PostID, Liker),
 		FOREIGN KEY (PostID) REFERENCES Post(PostID), 
@@ -130,10 +131,10 @@ func New(db *sql.DB) (AppDatabase, error) {
 		FOREIGN KEY (Followed) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
 	);
 	CREATE TABLE IF NOT EXISTS Comment (
-		CommentID INTEGER AUTO_INCREMENT PRIMARY KEY,
+		CommentID INTEGER PRIMARY KEY AUTOINCREMENT,
 		PostID INTEGER NOT NULL,
 		Author STRING UNIQUE NOT NULL,
-		CreationDatetime DATETIME,
+		CreationDatetime STRING,
 		Comment STRING,
 		FOREIGN KEY (Author) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
 	);

@@ -40,9 +40,9 @@ type UserList struct {
 
 type Post struct {
 	PostID           ID
-	Author           ID
+	Author           Username
 	Photo            string // URL path to the image, stored server-side
-	CreationDatetime time.Time
+	CreationDatetime string
 	Description      string
 }
 

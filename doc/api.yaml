@@ -507,8 +507,12 @@ paths:
                 description: 
                   $ref: '#/components/schemas/Comment'
       responses:
-        '204': # OK Created
+        '201': # OK Created
           description: The post is correctly created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
         '400': # Bad request
           description: Bad request provided.
           content:
