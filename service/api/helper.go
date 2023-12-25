@@ -16,17 +16,17 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 	token := components.ID{Value: r.Header.Get("Authorization")}
 	err := token.CheckIfValid()
 	if err != nil {
-		if err.Error() == "id not valid" {
+		if err == components.ErrIDNotValid {
 			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.WithError(err).Error("provided comment not valid")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided comment not valid").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("provided auth token not valid")
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided auth token not valid").Error())); err != nil {
 				ctx.Logger.WithError(err).Error("errow while writing the response")
 			}
 			return nil
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while checking if the comment is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the comment is valid" /*err*/).Error())); err != nil {
+		ctx.Logger.WithError(err).Error("error while checking if the auth token is valid")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the auth token is valid" /*err*/).Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return nil
@@ -36,17 +36,17 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 	var username *components.Username
 	username, err = rt.db.GetUsernameByToken(token.Value)
 	if err != nil {
+		var mess []byte
 		if err == sql.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
-			ctx.Logger.WithError(err).Error("no user found with such token")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusNotFound, "no user found with such token" /*err*/).Error())); err != nil {
-				ctx.Logger.WithError(err).Error("errow while writing the response")
-			}
-			return nil
+			w.WriteHeader(http.StatusUnauthorized)
+			ctx.Logger.WithError(err).Error("no user found with the provided authenticated token")
+			mess = []byte(fmt.Errorf(components.StatusUnauthorized, "no user found with the provided token").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while getting the username associated with the given token")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while getting the username associated with the given token" /*err*/).Error())
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while getting the username associated with the given token")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while getting the username associated with the given token" /*err*/).Error())); err != nil {
+		if _, err = w.Write(mess); err != nil {
 			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return nil
@@ -56,60 +56,48 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 
 }
 
-func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router) (*components.Username, *components.ID) {
-	// Retrieve the id of the post the user wants to like and check if it exists
-	postID := components.ID{Value: ps.ByName("post_id")}
-	err := postID.CheckIfValid()
+func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router, retrieve_post bool) (*components.Username, *components.ID) {
+
+	// Retrieve the username from the path and check if it is valid
+	ownerUsername := components.Username{Value: ps.ByName("username")}
+	err := ownerUsername.CheckIfValid()
 	if err != nil {
-		if err.Error() == "id not valid" {
-			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.WithError(err).Error("provided comment not valid")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided comment not valid").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("errow while writing the response")
-			}
-			return nil, nil
+		var mess []byte
+		if err == components.ErrUsernameNotValid {
+			w.WriteHeader(http.StatusUnauthorized)
+			mess = []byte(fmt.Errorf(components.StatusUnauthorized, "provided username not valid").Error())
+			ctx.Logger.Error("provided username not valid")
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid").Error())
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while checking if the comment is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the comment is valid" /*err*/).Error())); err != nil {
+		if _, err = w.Write(mess); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return nil, nil
 	}
 
-	if err = rt.db.CheckIfPostExists(postID.Value); err != nil {
-		if err == sql.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
-			ctx.Logger.WithError(err).Error("provided post does not exist")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusNotFound, "provided post does not exist").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("errow while writing the response")
-			}
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			ctx.Logger.WithError(err).Error("error while checking if the post exists")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the post exists" /*err*/).Error())); err != nil {
-				ctx.Logger.WithError(err).Error("errow while writing the response")
-			}
-		}
-		return nil, nil
+	if !retrieve_post {
+		return &ownerUsername, nil
 	}
 
-	// Retrieve the username from the path and check if it is valid
-	ownerUsername := components.Username{Value: ps.ByName("username")}
-	valid, err := ownerUsername.CheckIfValid()
+	// Retrieve the id of the post the user wants to like and check if it exists
+	postID := components.ID{Value: ps.ByName("post_id")}
+	err = postID.CheckIfValid()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+		var mess []byte
+		if err == components.ErrIDNotValid {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.Error("provided post id not valid")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided post id not valid").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the post id is valid")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the post id is valid").Error())
 		}
-		return nil, nil
-	}
-	if !*valid {
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.WithError(err).Error("provided username not valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return nil, nil
 	}
@@ -117,18 +105,18 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 	// Check if the username in the path is the owner of the given post
 	err = rt.db.CheckIfOwnerPost(ownerUsername.Value, postID.Value)
 	if err != nil {
+		var mess []byte
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
-			ctx.Logger.WithError(err).Error("provided username does not own the given post")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusNotFound, "provided username does not own the given post").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("errow while writing the response")
-			}
+			ctx.Logger.WithError(err).Error("either the username or the post not found; alternatively, the username does not own the provided post")
+			mess = []byte(fmt.Errorf(components.StatusNotFound, "either the username or the post not found; alternatively, the username does not own the provided post").Error())
 		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.WithError(err).Error("provided username not valid")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("errow while writing the response")
-			}
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the given username owns the provided post")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the given username owns the provided post").Error())
+		}
+		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return nil, nil
 	}
@@ -137,39 +125,32 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 
 }
 
-// func helperBan(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router) *components.Username {
-
-// 	// Authenticate the user
-// 	username := helperAuth(w, r, ps, ctx, rt)
-// 	if username == nil {
-// 		return nil
-// 	}
+// func helperBan(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router, username components.Username) *components.Username {
 
 // 	// Retrieve the username from the path and check if it's valid
 // 	bannerUsername := components.Username{Value: ps.ByName("username")}
-// 	valid, err := bannerUsername.CheckIfValid()
+// 	err := bannerUsername.CheckIfValid()
 // 	if err != nil {
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		ctx.Logger.WithError(err).Error("error while retrieving the username from the path")
-// 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "provided username not valid" /*err*/).Error())); err != nil {
-// 			ctx.Logger.WithError(err).Error("error while writing the response")
+// 		var mess []byte
+// 		if err == components.ErrUsernameNotValid {
+// 			w.WriteHeader(http.StatusBadRequest)
+// 			ctx.Logger.WithError(err).Error("provided username not valid")
+// 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
+// 		} else {
+// 			w.WriteHeader(http.StatusInternalServerError)
+// 			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+// 			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid").Error())
 // 		}
-// 		return nil
-// 	}
-// 	if !*valid {
-// 		w.WriteHeader(http.StatusBadRequest)
-// 		ctx.Logger.Error("provided username not valid")
-// 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid" /*err*/).Error())); err != nil {
+// 		if _, err = w.Write(mess); err != nil {
 // 			ctx.Logger.WithError(err).Error("error while writing the response")
 // 		}
 // 		return nil
 // 	}
 
-// 	// Check if the username in the path is the same as the authenticated one
 // 	if bannerUsername.Value != username.Value {
 // 		w.WriteHeader(http.StatusUnauthorized)
-// 		ctx.Logger.WithError(err).Error("cannot ban an user on behalf of another user")
-// 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot ban an user on behalf of another user" /*err*/).Error())); err != nil {
+// 		ctx.Logger.Error("cannot unban an user on behalf of another user")
+// 		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot unban an user on behalf of another user").Error())); err != nil {
 // 			ctx.Logger.WithError(err).Error("error while writing the response")
 // 		}
 // 		return nil

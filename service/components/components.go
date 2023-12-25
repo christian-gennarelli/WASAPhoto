@@ -3,9 +3,7 @@
 package components
 
 import (
-	"fmt"
 	"regexp"
-	"time"
 )
 
 type ID struct {
@@ -17,53 +15,44 @@ type Username struct {
 }
 
 type User struct {
-	ID         string
-	ProfilePic string
-	Username   string
+	ID         ID
+	Username   Username
 	Birthdate  string
 	Name       string
+	ProfilePic string // Base64 encoded image
 }
 
 type Profile struct {
 	User  User
-	Posts []ID
+	Posts []Post
 }
-
-/*
-	Note: for arrays, a list of IDs is returned, not of objects.
-	Their information will be retrieved later one if needed through their IDs.
-	This reasoning is applied to UsersList, CommentsList and Stream.
-*/
 
 type UserList struct {
 	Users []User
 }
 
-type Photo struct {
-	PhotoString string
-}
-
 type Post struct {
 	PostID           ID
-	Author           ID
-	Photo            Photo
-	CreationDatetime time.Time
+	Author           Username
+	Photo            string // URL path to the image, stored server-side
+	CreationDatetime string
 	Description      string
 }
 
 type Stream struct {
-	Posts []ID
+	Posts []Post
 }
 
 type Comment struct {
+	CommentID        ID
 	PostID           ID
 	Body             string
-	CreationDatetime time.Time
+	CreationDatetime string
 	Author           Username
 }
 
 type CommentList struct {
-	Comments []ID
+	Comments []Comment
 }
 
 type Error struct {
@@ -72,29 +61,46 @@ type Error struct {
 }
 
 // Check if the provided username is in the correct format
-func (Username Username) CheckIfValid() (*bool, error) {
+func (Username Username) CheckIfValid() error {
 
 	regex, err := regexp.Compile(USERNAME_REGEXP)
 	if err != nil {
-		return nil, fmt.Errorf("error while compiling the regex for checking the validity of the provided username")
+		return err
 	}
 
-	valid := regex.MatchString(Username.Value)
-	return &valid, nil
+	if !regex.MatchString(Username.Value) {
+		return ErrIDNotValid
+	}
+
+	return nil
 }
 
 func (Id ID) CheckIfValid() error {
 
 	regex, err := regexp.Compile(ID_REGEXP)
 	if err != nil {
-		return fmt.Errorf("error while compiling the regex for checking the validity of the provided ID")
+		return err
 	}
 
-	valid := regex.MatchString(Id.Value)
-	if valid {
-		return nil
-	} else {
-		return fmt.Errorf("id not valid")
+	if !regex.MatchString(Id.Value) {
+		return ErrUsernameNotValid
 	}
+
+	return nil
+
+}
+
+func (comment Comment) CheckIfValid() error {
+
+	regex, err := regexp.Compile(COMMENT_REGEXP)
+	if err != nil {
+		return err
+	}
+
+	if !regex.MatchString(comment.Body) {
+		return ErrCommentNotValid
+	}
+
+	return nil
 
 }

@@ -15,22 +15,46 @@ func (rt _router) getUserProfile(w http.ResponseWriter, r *http.Request, ps http
 
 	w.Header().Set("Content-Type", "application/json")
 
-	// Retrieve the username and check if it is valid
+	// Retrieve the username of the authenticated user
+	authUsername := helperAuth(w, r, ps, ctx, rt)
+	if authUsername == nil {
+		return
+	}
+
+	// Retrieve the username from the path and check if it is valid
 	username := components.Username{Value: ps.ByName("username")}
-	valid, err := username.CheckIfValid()
+	err := username.CheckIfValid()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+		var mess []byte
+		if err == components.ErrUsernameNotValid {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.WithError(err).Error("provided username not valid")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())
+		}
+		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
-	if !*valid {
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.Error("provided username not valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+
+	// Check if the authenticated user banned the user provided in the path, or viceversa
+	err = rt.db.CheckIfBanned(authUsername.Value, username.Value)
+	if err == nil {
+		w.WriteHeader(http.StatusForbidden)
+		ctx.Logger.Error("cannot get the profile a banned user or that has banned the authenticated user")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusForbidden, "cannot get the profile of an user or that has banned the authenticated user").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	} else if err != sql.ErrNoRows {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while checking if the authenticated user banned the other user or viceversa")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "error while checking if the authenticated user banned the other user or viceversa").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
@@ -38,18 +62,18 @@ func (rt _router) getUserProfile(w http.ResponseWriter, r *http.Request, ps http
 	// Retrieve the profile of the user with the given username
 	profile, err := rt.db.GetUserProfile(username.Value)
 	if err != nil {
+		var mess []byte
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
 			ctx.Logger.WithError(err).Error("provided username does not exist")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusNotFound, "provided username does not exist").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("error while writing the response")
-			}
+			mess = []byte(fmt.Errorf(components.StatusNotFound, "provided username does not exist").Error())
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error("error while getting the profile of the user")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
-				ctx.Logger.WithError(err).Error("errow while writing the response")
-			}
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, err).Error())
+		}
+		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
 		}
 		return
 	}
@@ -80,14 +104,6 @@ func (rt _router) getUserProfile(w http.ResponseWriter, r *http.Request, ps http
 func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
 	w.Header().Set("Content-Type", "application/json")
-	if contentType := r.Header.Get("Content-Type"); contentType != "application/json" {
-		w.WriteHeader(http.StatusUnsupportedMediaType)
-		ctx.Logger.Error("unsupported media type provided")
-		if _, err := w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "Invalid Content-Type. Only application/json is supported").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return
-	}
 
 	// Retrieve the authorization token and username from the request
 	usernameAuth := helperAuth(w, r, ps, ctx, rt)
@@ -95,22 +111,21 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 
+	// Retrieve the username from the path and check if it is valid
 	username := components.Username{Value: ps.ByName("username")}
-
-	// Check if the provided username is valid
-	valid, err := username.CheckIfValid()
+	err := username.CheckIfValid()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
+		var mess []byte
+		if err == components.ErrUsernameNotValid {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.WithError(err).Error("provided username not valid")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())
 		}
-		return
-	}
-	if !*valid {
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.Error("provided username not valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())); err != nil {
+		if _, err = w.Write(mess); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
@@ -118,41 +133,30 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 
 	// Check if the two usernames coincide
 	if username.Value != usernameAuth.Value { // Not the same username
-		w.WriteHeader(http.StatusUnauthorized)
-		ctx.Logger.WithError(err).Error("not authorized to change the username of another user")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "not authorized to change the username of another user").Error())); err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		ctx.Logger.Error("not authorized to change the username of another user")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusForbidden, "not authorized to change the username of another user").Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
 
-	// Retrieve the new username from the request body
-	var new_username components.Username
-	err = json.NewDecoder(r.Body).Decode(&new_username)
+	// Retrieve the new username and check if it's valid
+	new_username := components.Username{Value: r.URL.Query().Get("new-username")}
+	err = new_username.CheckIfValid()
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.WithError(err).Error("error while decoding the body of the request")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "error while decoding the body of the request" /*err*/).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+		var mess []byte
+		if err == components.ErrUsernameNotValid {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.WithError(err).Error("provided username not valid")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())
 		}
-		return
-	}
-
-	// Check if the provided username is valid or not
-	valid, err = new_username.CheckIfValid()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
-		}
-		return
-	}
-	if !*valid {
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.Error("provided username not valid")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
@@ -160,18 +164,22 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	// Update the username
 	err = rt.db.UpdateUsername(new_username.Value, username.Value)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		var mess []byte
+		if err == sql.ErrNoRows { // Old username not found
 			w.WriteHeader(http.StatusNotFound)
 			ctx.Logger.WithError(err).Error("provided username does not exist")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "provided username does not exists").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("error while writing the response")
-			}
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username does not exists").Error())
+		} else if err == components.ErrUniqueConstraintUsername { // Username already exists
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.WithError(err).Error("provided username already exists")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username already exists").Error())
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error("error while updating the username")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while updating the username" /*err*/).Error())); err != nil {
-				ctx.Logger.WithError(err).Error("errow while writing the response")
-			}
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while updating the username" /*err*/).Error())
+		}
+		if _, err = w.Write([]byte(mess)); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
@@ -182,7 +190,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while enconding the response as JSON")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while enconding the response as JSON" /*err*/).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
@@ -191,7 +199,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while writing the response")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while writing the response" /*err*/).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}

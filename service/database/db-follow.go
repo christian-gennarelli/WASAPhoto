@@ -6,18 +6,20 @@ import (
 	"encoding/base64"
 	"io"
 	"os"
+	"strconv"
+	"time"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
 )
 
-func (db appdbimpl) GetFollowersList(followedUsername string) (*components.UserList, error) {
+func (db appdbimpl) GetFollowersList(followedUsername string, startDatetime string) (*components.UserList, error) {
 
-	stmt, err := db.c.Prepare("SELECT U.Username, U.Birthdate, U.ProfilePicPath, U.Name FROM Follow F JOIN User U ON F.Follower = U.Username WHERE Followed = ?")
+	stmt, err := db.c.Prepare("SELECT U.Username, COALESCE('', U.Birthdate), U.ProfilePicPath,  COALESCE('', U.Name) FROM Follow F JOIN User U ON F.Follower = U.Username WHERE F.Followed = ? AND F.CreationDatetime <= ? ORDER BY F.CreationDatetime DESC LIMIT 16")
 	if err != nil {
 		return nil, err //fmt.Errorf("error while preparing the SQL statement to obtain the followers of the given username")
 	}
 
-	rows, err := stmt.Query(followedUsername)
+	rows, err := stmt.Query(followedUsername, startDatetime)
 	if err != nil && err != sql.ErrNoRows { // We don't care if no user follows the given one, we'll write the StatusNoContent header if it happens to be the case
 		return nil, err //fmt.Errorf("error while executing the SQL statement to obtain the followers of the given username")
 	}
@@ -25,7 +27,7 @@ func (db appdbimpl) GetFollowersList(followedUsername string) (*components.UserL
 	var userList components.UserList
 	for rows.Next() {
 		var user components.User
-		err = rows.Scan(&user.Username, &user.Birthdate, &user.ProfilePic, &user.Name)
+		err = rows.Scan(&user.Username.Value, &user.Birthdate, &user.ProfilePic, &user.Name)
 		if err != nil {
 			return nil, err //fmt.Errorf("error while scanning the result of the query")
 		}
@@ -42,14 +44,14 @@ func (db appdbimpl) GetFollowersList(followedUsername string) (*components.UserL
 
 }
 
-func (db appdbimpl) GetFollowingList(followerUsername string) (*components.UserList, error) {
+func (db appdbimpl) GetFollowingList(followerUsername string, startDatetime string) (*components.UserList, error) {
 
-	stmt, err := db.c.Prepare("SELECT U.Username, COALESCE(U.Birthdate, ''), U.ProfilePicPath, COALESCE(U.Name, '') FROM Follow F JOIN User U ON F.Followed = U.Username WHERE Follower = ?")
+	stmt, err := db.c.Prepare("SELECT U.Username, COALESCE(U.Birthdate, ''), U.ProfilePicPath, COALESCE(U.Name, '') FROM Follow F JOIN User U ON F.Followed = U.Username WHERE F.Follower = ? AND F.CreationDatetime <= ? ORDER BY F.CreationDatetime DESC LIMIT 16")
 	if err != nil {
 		return nil, err //fmt.Errorf("error while preparing the SQL statement to obtain the followers of the given username")
 	}
 
-	rows, err := stmt.Query(followerUsername)
+	rows, err := stmt.Query(followerUsername, startDatetime)
 	if err != nil && err != sql.ErrNoRows { // We don't care if no user follows the given one, we'll write the StatusNoContent header if it happens to be the case
 		return nil, err //fmt.Errorf("error while executing the SQL statement to obtain the followers of the given username")
 	}
@@ -57,11 +59,12 @@ func (db appdbimpl) GetFollowingList(followerUsername string) (*components.UserL
 	var userList components.UserList
 	for rows.Next() {
 		var user components.User
-		err = rows.Scan(&user.Username, &user.Birthdate, &user.ProfilePic, &user.Name)
+		err = rows.Scan(&user.Username.Value, &user.Birthdate, &user.ProfilePic, &user.Name)
 		if err != nil {
 			return nil, err //fmt.Errorf("error while scanning the result of the query")
 		}
 
+		// Open the image specified by the path saved in the record
 		img, _ := os.Open(user.ProfilePic)
 		reader := bufio.NewReader(img)
 		content, _ := io.ReadAll(reader)
@@ -76,12 +79,14 @@ func (db appdbimpl) GetFollowingList(followerUsername string) (*components.UserL
 
 func (db appdbimpl) FollowUser(followerUsername string, followedUsername string) error {
 
-	stmt, err := db.c.Prepare("INSERT INTO Follow (Follower, Followed) VALUES (?, ?)")
+	stmt, err := db.c.Prepare("INSERT INTO Follow (Follower, Followed, CreationDatetime) VALUES (?, ?, ?)")
 	if err != nil {
 		return err //fmt.Errorf("error while preparing the SQL statement to add followerUsername to the list of followers of followedUsername")
 	}
 
-	if _, err = stmt.Exec(followerUsername, followedUsername); err != nil {
+	t := time.Now()
+	startDatetime := strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
+	if _, err = stmt.Exec(followerUsername, followedUsername, startDatetime); err != nil {
 		return err //fmt.Errorf("error while executing the SQL statement to add followerUsername to the list of followers of followedUsername")
 	}
 

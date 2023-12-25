@@ -54,27 +54,31 @@ type AppDatabase interface {
 	UpdateUsername(NewUsername string, OldUsername string) error
 
 	// Post queries
-	CheckIfPostExists(PostID string) error
 	CheckIfOwnerPost(Username string, PostID string) error
 	AddLikeToPost(Username string, PostID string) error
 	RemoveLikeFromPost(Username string, PostID string) error
-	AddCommentToPost(PostID string, Body string, CreationDatetime string, Author string) error
+	AddCommentToPost(PostID string, Body string, Author string) error
 	RemoveCommentFromPost(PostID string, CommentID string) error
+	GetUserStream(startDatetime string, username string) (*components.Stream, error)
+	UploadPost(username string, description string) (error, *components.Post)
+	DeletePost(postID string) (*string, error)
+	GetPostComments(postID string, startDatetime string) (*components.CommentList, error)
+	GetPostLikes(postID string, startDatetime string) (*components.UserList, error)
 
 	// Profile queries
 	GetUserProfile(Username string) (*components.Profile, error)
 
 	// Follow queries
-	GetFollowingList(followingUsername string) (*components.UserList, error)
-	GetFollowersList(followedUsername string) (*components.UserList, error)
+	GetFollowingList(followingUsername string, startDatetime string) (*components.UserList, error)
+	GetFollowersList(followedUsername string, startDatetime string) (*components.UserList, error)
 	FollowUser(followerUsername string, followingUsername string) error
 	UnfollowUser(followerUsername string, followingUsername string) error
 
 	// Ban queries
 	BanUser(bannerUsername, bannedUsername string) error
 	UnbanUser(bannerUsername, bannedUsername string) error
-	GetBanUserList(bannerUsername string) (*components.UserList, error)
-	CheckIfBanned(bannerUsername string, bannedUsername string) (*bool, error)
+	GetBanUserList(bannerUsername string, startDatetime string) (*components.UserList, error)
+	CheckIfBanned(bannerUsername string, bannedUsername string) error
 }
 
 type appdbimpl struct {
@@ -103,42 +107,47 @@ func New(db *sql.DB) (AppDatabase, error) {
 	CREATE TABLE IF NOT EXISTS User (
 		ID STRING UNIQUE NOT NULL,
 		Username STRING PRIMARY KEY NOT NULL,
-		ProfilePicPath STRING DEFAULT './photos/profile_pics/default.png',
-		Birthdate DATE,
+		ProfilePicPath STRING DEFAULT 'http://localhost:3000/photos/profile_pics/default.png',
+		Birthdate STRING,
 		Name STRING
 	);
 	CREATE TABLE IF NOT EXISTS Post (
-		PostID INTEGER AUTO_INCREMENT PRIMARY KEY,
-		Author VARCHAR(16) UNIQUE NOT NULL,
-		CreationDatetime DATETIME,
+		PostID INTEGER PRIMARY KEY AUTOINCREMENT,
+		Author VARCHAR(16) NOT NULL,
+		CreationDatetime STRING NOT NULL,
 		Description VARCHAR(128),
+		PhotoPath STRING, 
 		FOREIGN KEY (Author) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
 	);
 	CREATE TABLE IF NOT EXISTS Like (
-		PostID INTEGER AUTO_INCREMENT INTEGER,
+		PostID INTEGER NOT NULL,
 		Liker STRING NOT NULL,
+		CreationDatetime STRING NOT NULL,
 		PRIMARY KEY (PostID, Liker),
 		FOREIGN KEY (PostID) REFERENCES Post(PostID), 
-		FOREIGN KEY (Liker) REFERENCES User(Token) ON DELETE CASCADE ON UPDATE CASCADE
+		FOREIGN KEY (Liker) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
 	);
 	CREATE TABLE IF NOT EXISTS Follow (
 		Follower STRING NOT NULL,
 		Followed STRING NOT NULL,
+		CreationDatetime STRING NOT NULL,
 		PRIMARY KEY (Follower, Followed),
 		FOREIGN KEY (Follower) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE,
 		FOREIGN KEY (Followed) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
 	);
 	CREATE TABLE IF NOT EXISTS Comment (
-		CommentID INTEGER AUTO_INCREMENT PRIMARY KEY,
+		CommentID INTEGER PRIMARY KEY AUTOINCREMENT,
 		PostID INTEGER NOT NULL,
-		Author STRING UNIQUE NOT NULL,
-		CreationDatetime DATETIME,
+		Author STRING NOT NULL,
+		CreationDatetime STRING NOT NULL,
 		Comment STRING,
 		FOREIGN KEY (Author) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
+		FOREIGN KEY (PostID) REFERENCES Post(PostID) ON DELETE CASCADE ON UPDATE CASCADE
 	);
 	CREATE TABLE IF NOT EXISTS Ban (
 		Banner STRING,
 		Banned STRING,
+		CreationDatetime STRING NOT NULL,
 		PRIMARY KEY (Banner, Banned),
 		FOREIGN KEY (Banned) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE,
 		FOREIGN KEY (Banner) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
