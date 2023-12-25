@@ -61,6 +61,7 @@ type AppDatabase interface {
 	RemoveCommentFromPost(PostID string, CommentID string) error
 	GetUserStream(startDatetime string, username string) (*components.Stream, error)
 	UploadPost(username string, description string) (error, *components.Post)
+	DeletePost(postID string) (*string, error)
 
 	// Profile queries
 	GetUserProfile(Username string) (*components.Profile, error)

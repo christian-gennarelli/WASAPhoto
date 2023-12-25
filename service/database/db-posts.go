@@ -150,3 +150,23 @@ func (db appdbimpl) UploadPost(username string, description string) (error, *com
 	}
 
 }
+
+func (db appdbimpl) DeletePost(postID string) (*string, error) {
+
+	stmt, err := db.c.Prepare("SELECT PhotoPath FROM Post WHERE PostID = ?")
+	if err != nil {
+		return nil, err
+	}
+
+	var photoPath string
+	if err := stmt.QueryRow(postID).Scan(&photoPath); err != nil {
+		return nil, err
+	}
+
+	if _, err := db.c.Exec("DELETE FROM Post WHERE PostID = ?", postID); err != nil {
+		return nil, err
+	}
+
+	return &photoPath, nil
+
+}

@@ -95,3 +95,18 @@ func (Id ID) CheckIfValid() error {
 	return nil
 
 }
+
+func (comment Comment) CheckIfValid() error {
+
+	regex, err := regexp.Compile(COMMENT_REGEXP)
+	if err != nil {
+		return err
+	}
+
+	if !regex.MatchString(comment.Body) {
+		return ErrCommentNotValid
+	}
+
+	return nil
+
+}

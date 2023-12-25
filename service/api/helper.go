@@ -56,31 +56,11 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 
 }
 
-func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router) (*components.Username, *components.ID) {
-
-	// Retrieve the id of the post the user wants to like and check if it exists
-	postID := components.ID{Value: ps.ByName("post_id")}
-	err := postID.CheckIfValid()
-	if err != nil {
-		var mess []byte
-		if err == components.ErrIDNotValid {
-			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.Error("provided post id not valid")
-			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided post id not valid").Error())
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			ctx.Logger.WithError(err).Error("error while checking if the post id is valid")
-			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the post id is valid" /*err*/).Error())
-		}
-		if _, err = w.Write(mess); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return nil, nil
-	}
+func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router, retrieve_post bool) (*components.Username, *components.ID) {
 
 	// Retrieve the username from the path and check if it is valid
 	ownerUsername := components.Username{Value: ps.ByName("username")}
-	err = ownerUsername.CheckIfValid()
+	err := ownerUsername.CheckIfValid()
 	if err != nil {
 		var mess []byte
 		if err == components.ErrUsernameNotValid {
@@ -90,7 +70,31 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid").Error())
+		}
+		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return nil, nil
+	}
+
+	if !retrieve_post {
+		return &ownerUsername, nil
+	}
+
+	// Retrieve the id of the post the user wants to like and check if it exists
+	postID := components.ID{Value: ps.ByName("post_id")}
+	err = postID.CheckIfValid()
+	if err != nil {
+		var mess []byte
+		if err == components.ErrIDNotValid {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.Error("provided post id not valid")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided post id not valid").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the post id is valid")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the post id is valid").Error())
 		}
 		if _, err = w.Write(mess); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
