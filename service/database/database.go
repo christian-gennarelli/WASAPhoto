@@ -57,11 +57,12 @@ type AppDatabase interface {
 	CheckIfOwnerPost(Username string, PostID string) error
 	AddLikeToPost(Username string, PostID string) error
 	RemoveLikeFromPost(Username string, PostID string) error
-	AddCommentToPost(PostID string, Body string, CreationDatetime string, Author string) error
+	AddCommentToPost(PostID string, Body string, Author string) error
 	RemoveCommentFromPost(PostID string, CommentID string) error
 	GetUserStream(startDatetime string, username string) (*components.Stream, error)
 	UploadPost(username string, description string) (error, *components.Post)
 	DeletePost(postID string) (*string, error)
+	GetPostComments(postID string, startDatetime string) (*components.CommentList, error)
 
 	// Profile queries
 	GetUserProfile(Username string) (*components.Profile, error)
@@ -134,10 +135,11 @@ func New(db *sql.DB) (AppDatabase, error) {
 	CREATE TABLE IF NOT EXISTS Comment (
 		CommentID INTEGER PRIMARY KEY AUTOINCREMENT,
 		PostID INTEGER NOT NULL,
-		Author STRING UNIQUE NOT NULL,
+		Author STRING NOT NULL,
 		CreationDatetime STRING,
 		Comment STRING,
 		FOREIGN KEY (Author) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
+		FOREIGN KEY (PostID) REFERENCES Post(PostID) ON DELETE CASCADE ON UPDATE CASCADE
 	);
 	CREATE TABLE IF NOT EXISTS Ban (
 		Banner STRING,

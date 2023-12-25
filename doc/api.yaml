@@ -800,6 +800,22 @@ paths:
         Return the list of the comments under the post with id 'post_id' of 'username'.
       security:
         - BearerAuth: []
+      parameters:
+        - in: query
+          name: start-datetime
+          description: |-   
+            Datetime up to which posts will be included in the user's stream.
+            (The ending datetime is implicit: now! In this way, in the stream
+            will be inclued all photos posted from 'start-datetime' up to now.)
+          schema: 
+            description: Starting datetime
+            type: string
+            format: date-time
+            pattern:  '/([0-9]{4})-(?:[0-9]{2})-([0-9]{2}) ([0-9]{2}):(?:[0-9]{2}):([0-9]{2})/'
+            minLength: 19
+            maxLength: 19
+            example: "2009-12-19 23:59:44"
+          required: true
       responses:
         '200': # OK
             description: Return the list of comments under the post.
@@ -852,7 +868,7 @@ paths:
         - BearerAuth: []
       requestBody:
         content:
-          application/json:
+          text/plain:
             schema:
               description: Content of the posted comment
               type: string

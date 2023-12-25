@@ -58,14 +58,16 @@ func (db appdbimpl) RemoveLikeFromPost(Username string, PostID string) error {
 
 }
 
-func (db appdbimpl) AddCommentToPost(PostID string, Body string, CreationDatetime string, Author string) error {
+func (db appdbimpl) AddCommentToPost(PostID string, Body string, Author string) error {
 
-	stmt, err := db.c.Prepare("INSERT INTO Comment (PostID, Author, CreationDatetime, Comment) VALUES (?, ?, CONVERT(DATETIME, ?), ?)")
+	stmt, err := db.c.Prepare("INSERT INTO Comment (PostID, Author, CreationDatetime, Comment) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		return err //fmt.Errorf("error while preparing the SQL statement to add the comment")
 	}
 	defer stmt.Close()
 
+	t := time.Now()
+	CreationDatetime := strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
 	_, err = stmt.Exec(PostID, Author, CreationDatetime, Body)
 	if err != nil {
 		return err //fmt.Errorf("error while executing the query to add the comment")
@@ -168,5 +170,30 @@ func (db appdbimpl) DeletePost(postID string) (*string, error) {
 	}
 
 	return &photoPath, nil
+
+}
+
+func (db appdbimpl) GetPostComments(postID string, startDatetime string) (*components.CommentList, error) {
+
+	stmt, err := db.c.Prepare("SELECT * FROM Comment WHERE PostID = ? AND CreationDatetime <= ? ORDER BY CreationDatetime DESC LIMIT 16")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.Query(postID, startDatetime)
+	if err != nil {
+		return nil, err
+	}
+
+	var commentList components.CommentList
+	for rows.Next() {
+		var comment components.Comment
+		if err := rows.Scan(&comment.CommentID.Value, &comment.PostID.Value, &comment.Author.Value, &comment.CreationDatetime, &comment.Body); err != nil {
+			return nil, err
+		}
+		commentList.Comments = append(commentList.Comments, comment)
+	}
+
+	return &commentList, nil
 
 }

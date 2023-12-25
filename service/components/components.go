@@ -4,7 +4,6 @@ package components
 
 import (
 	"regexp"
-	"time"
 )
 
 type ID struct {
@@ -28,12 +27,6 @@ type Profile struct {
 	Posts []Post
 }
 
-/*
-	Note: for arrays, a list of IDs is returned, not of objects.
-	Their information will be retrieved later one if needed through their IDs.
-	This reasoning is applied to UsersList, CommentsList and Stream.
-*/
-
 type UserList struct {
 	Users []User
 }
@@ -51,14 +44,15 @@ type Stream struct {
 }
 
 type Comment struct {
+	CommentID        ID
 	PostID           ID
 	Body             string
-	CreationDatetime time.Time
+	CreationDatetime string
 	Author           Username
 }
 
 type CommentList struct {
-	Comments []ID
+	Comments []Comment
 }
 
 type Error struct {

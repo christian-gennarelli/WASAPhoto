@@ -133,14 +133,14 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	w.Header().Set("Content-Type", "application/json")
 
 	// Check if the content of the request body is in a JSON format
-	if contentType := r.Header.Get("Content-Type"); contentType != "application/json" {
-		w.WriteHeader(http.StatusUnsupportedMediaType)
-		ctx.Logger.Error("unsupported media type provided")
-		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnsupportedMediaType).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return
-	}
+	// if contentType := r.Header.Get("Content-Type"); contentType != "application/json" {
+	// 	w.WriteHeader(http.StatusUnsupportedMediaType)
+	// 	ctx.Logger.Error("unsupported media type provided")
+	// 	if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnsupportedMediaType).Error())); err != nil {
+	// 		ctx.Logger.WithError(err).Error("error while writing the response")
+	// 	}
+	// 	return
+	// }
 
 	// Retrieve the username of the authenticated user
 	username := helperAuth(w, r, ps, ctx, rt)
@@ -171,7 +171,8 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 
 	// Retrieve the comment from the request body
 	var comment components.Comment
-	if err := json.NewDecoder(r.Body).Decode(&comment.Body); err != nil {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while decoding the comment from the request body")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while decoding the comment from the request body").Error())); err != nil {
@@ -179,6 +180,8 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		}
 		return
 	}
+
+	comment.Body = string(body)
 
 	if err := comment.CheckIfValid(); err != nil {
 		var mess []byte
@@ -197,10 +200,8 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
-	t := time.Now()
-	currentDatetime := strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "T" + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
 	// Add the comment to the post
-	err = rt.db.AddCommentToPost(postID.Value, comment.Body, currentDatetime, username.Value)
+	err = rt.db.AddCommentToPost(postID.Value, comment.Body, username.Value)
 	if err != nil {
 		var mess []byte
 		if err == components.ErrForeignKeyConstraint {
@@ -406,7 +407,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 
 }
 
-func (rt _router) deletePost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+func (rt _router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
 	// Retrieve the username of the authenticated user
 	usernameAuth := helperAuth(w, r, ps, ctx, rt)
@@ -492,7 +493,7 @@ func (rt _router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprou
 	startDatetime := r.URL.Query().Get("start-datetime")
 	if len(startDatetime) == 0 {
 		t := time.Now()
-		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "T" + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
+		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
 	}
 
 	// Retrieve the stream of the user
@@ -525,6 +526,90 @@ func (rt _router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprou
 			ctx.Logger.WithError(err).Error("error while writing the response")
 			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while writing the response").Error())); err != nil {
 				ctx.Logger.WithError(err).Error("error while writing the response")
+			}
+			return
+		}
+	} else {
+		w.WriteHeader(http.StatusNoContent)
+	}
+
+}
+
+func (rt _router) getPostComments(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+
+	// Retrieve the username of the authenticated user
+	usernameAuth := helperAuth(w, r, ps, ctx, rt)
+	if usernameAuth == nil {
+		return
+	}
+
+	// Retrieve the username of the owner of the post and the ID of it
+	usernameOwner, postID := helperPost(w, r, ps, ctx, rt, true)
+	if usernameOwner == nil || postID == nil {
+		return
+	}
+
+	// Check if one of the users banned the other one
+	err := rt.db.CheckIfBanned(usernameAuth.Value, usernameOwner.Value)
+	if err == nil {
+		w.WriteHeader(http.StatusForbidden)
+		ctx.Logger.Error("cannot get the comments of a post of a banned user or that has banned the authenticated user")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusForbidden, "cannot get the comments of a post of a banned user or that has banned the authenticated user").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	} else if err != sql.ErrNoRows {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while checking if the authenticated user banned the other user or viceversa")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the authenticated user banned the other user or viceversa").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	startDatetime := r.URL.Query().Get("start-datetime")
+	if len(startDatetime) == 0 {
+		t := time.Now()
+		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
+	}
+
+	fmt.Println(startDatetime)
+
+	// Retrieve the list of comments of the given post
+	commentList, err := rt.db.GetPostComments(postID.Value, startDatetime)
+	if err != nil {
+		var mess []byte
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.WithError(err).Error("provided post does not exist")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided post does not exist").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the authenticated user banned the other user or viceversa")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "error while checking if the authenticated user banned the other user or viceversa").Error())
+		}
+		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	if len(commentList.Comments) > 0 {
+		w.WriteHeader(http.StatusOK)
+		response, err := json.MarshalIndent(commentList.Comments, "", " ")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error(("error while encoding the response as JSON"))
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+				ctx.Logger.WithError(err).Error("error while encoding the response as JSON")
+			}
+			return
+		}
+		if _, err = w.Write(response); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error(("error while writing the response in the response body"))
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+				ctx.Logger.WithError(err).Error("error while writing the response in the response body")
 			}
 			return
 		}
