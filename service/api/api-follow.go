@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
@@ -59,8 +61,14 @@ func (rt _router) getFollowingList(w http.ResponseWriter, r *http.Request, ps ht
 		return
 	}
 
+	startDatetime := r.URL.Query().Get("datetime")
+	if len(startDatetime) == 0 {
+		t := time.Now()
+		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
+	}
+
 	// Send the request to the database
-	users, err := rt.db.GetFollowingList(username.Value)
+	users, err := rt.db.GetFollowingList(username.Value, startDatetime)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while getting the list of followings")
@@ -329,8 +337,14 @@ func (rt _router) getFollowersList(w http.ResponseWriter, r *http.Request, ps ht
 		return
 	}
 
+	startDatetime := r.URL.Query().Get("datetime")
+	if len(startDatetime) == 0 {
+		t := time.Now()
+		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
+	}
+
 	// Send the request to the database
-	users, err := rt.db.GetFollowersList(username.Value)
+	users, err := rt.db.GetFollowersList(username.Value, startDatetime)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while getting the list of followers")

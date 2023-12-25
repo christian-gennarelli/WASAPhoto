@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
@@ -19,13 +21,44 @@ func (rt _router) getBanUserList(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// Retrieve the username from the path and check if it's valid
-	bannerUsername := helperBan(w, r, ps, ctx, rt, *username)
-	if bannerUsername != nil {
+	// Retrieve the username from the path and check if it's valid
+	bannerUsername := components.Username{Value: ps.ByName("username")}
+	err := bannerUsername.CheckIfValid()
+	if err != nil {
+		var mess []byte
+		if err == components.ErrUsernameNotValid {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.WithError(err).Error("provided username not valid")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid").Error())
+		}
+		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
 		return
 	}
 
+	// Check if the username in the path is the same as the authenticated one
+	if bannerUsername.Value != username.Value {
+		w.WriteHeader(http.StatusUnauthorized)
+		ctx.Logger.Error("cannot unban an user on behalf of another user")
+		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot unban an user on behalf of another user").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	startDatetime := r.URL.Query().Get("datetime")
+	if len(startDatetime) == 0 {
+		t := time.Now()
+		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
+	}
+
 	// Get the list of banned users
-	bannedUserList, err := rt.db.GetBanUserList(bannerUsername.Value)
+	bannedUserList, err := rt.db.GetBanUserList(bannerUsername.Value, startDatetime)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while getting the banlist for the user")
@@ -35,18 +68,17 @@ func (rt _router) getBanUserList(w http.ResponseWriter, r *http.Request, ps http
 		return
 	}
 
-	response, err := json.MarshalIndent(bannedUserList.Users, "", " ")
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while encoding the response as JSON")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while encoding the response as JSON").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return
-	}
-
 	if len(bannedUserList.Users) > 0 {
 		w.WriteHeader(http.StatusOK)
+		response, err := json.MarshalIndent(bannedUserList.Users, "", " ")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while encoding the response as JSON")
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while encoding the response as JSON").Error())); err != nil {
+				ctx.Logger.WithError(err).Error("error while writing the response")
+			}
+			return
+		}
 		if _, err = w.Write(response); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error("error while writing the response")
@@ -72,8 +104,32 @@ func (rt _router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	// Retrieve the username from the path and check if it's valid
-	bannerUsername := helperBan(w, r, ps, ctx, rt, *username)
-	if bannerUsername != nil {
+	bannerUsername := components.Username{Value: ps.ByName("username")}
+	err := bannerUsername.CheckIfValid()
+	if err != nil {
+		var mess []byte
+		if err == components.ErrUsernameNotValid {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.WithError(err).Error("provided username not valid")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid").Error())
+		}
+		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	// Check if the username in the path is the same as the authenticated one
+	if bannerUsername.Value != username.Value {
+		w.WriteHeader(http.StatusUnauthorized)
+		ctx.Logger.Error("cannot unban an user on behalf of another user")
+		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot unban an user on behalf of another user").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
 		return
 	}
 
@@ -127,8 +183,32 @@ func (rt _router) unbanUser(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 
 	// Retrieve the username from the path and check if it's valid
-	bannerUsername := helperBan(w, r, ps, ctx, rt, *username)
-	if bannerUsername != nil {
+	bannerUsername := components.Username{Value: ps.ByName("username")}
+	err := bannerUsername.CheckIfValid()
+	if err != nil {
+		var mess []byte
+		if err == components.ErrUsernameNotValid {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.WithError(err).Error("provided username not valid")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid").Error())
+		}
+		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	// Check if the username in the path is the same as the authenticated one
+	if bannerUsername.Value != username.Value {
+		w.WriteHeader(http.StatusUnauthorized)
+		ctx.Logger.Error("cannot unban an user on behalf of another user")
+		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot unban an user on behalf of another user").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
 		return
 	}
 

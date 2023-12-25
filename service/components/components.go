@@ -15,8 +15,8 @@ type Username struct {
 }
 
 type User struct {
-	ID         string
-	Username   string
+	ID         ID
+	Username   Username
 	Birthdate  string
 	Name       string
 	ProfilePic string // Base64 encoded image

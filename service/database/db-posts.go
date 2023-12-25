@@ -27,13 +27,15 @@ func (db appdbimpl) CheckIfOwnerPost(Username string, PostID string) error {
 
 func (db appdbimpl) AddLikeToPost(Username string, PostID string) error {
 
-	stmt, err := db.c.Prepare("INSERT INTO Like (PostID, Liker) VALUES (?, ?)")
+	stmt, err := db.c.Prepare("INSERT INTO Like (PostID, Liker, CreationDatetime) VALUES (?, ?, ?)")
 	if err != nil {
 		return err //fmt.Errorf("error while preparing the SQL statement to add the like")
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(PostID, Username)
+	t := time.Now()
+	CreationDatetime := strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
+	_, err = stmt.Exec(PostID, Username, CreationDatetime)
 	if err != nil {
 		return err //fmt.Errorf("error while executing the query to add the like")
 	}
@@ -195,5 +197,30 @@ func (db appdbimpl) GetPostComments(postID string, startDatetime string) (*compo
 	}
 
 	return &commentList, nil
+
+}
+
+func (db appdbimpl) GetPostLikes(postID string, startDatetime string) (*components.UserList, error) {
+
+	stmt, err := db.c.Prepare("SELECT U.Username, U.ProfilePicPath, COALESCE('', U.Birthdate), COALESCE('', U.Name) FROM User U JOIN Like L ON L.Liker = U.Username WHERE L.PostID = ? AND L.CreationDatetime <= ? ORDER BY CreationDatetime DESC LIMIT 16")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.Query(postID, startDatetime)
+	if err != nil {
+		return nil, err
+	}
+
+	var userList components.UserList
+	for rows.Next() {
+		var user components.User
+		if err := rows.Scan(&user.Username.Value, &user.ProfilePic, &user.Birthdate, &user.Name); err != nil {
+			return nil, err
+		}
+		userList.Users = append(userList.Users, user)
+	}
+
+	return &userList, nil
 
 }

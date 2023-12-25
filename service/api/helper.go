@@ -125,38 +125,37 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 
 }
 
-func helperBan(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router, username components.Username) *components.Username {
+// func helperBan(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router, username components.Username) *components.Username {
 
-	// Retrieve the username from the path and check if it's valid
-	bannerUsername := components.Username{Value: ps.ByName("username")}
-	err := bannerUsername.CheckIfValid()
-	if err != nil {
-		var mess []byte
-		if err == components.ErrUsernameNotValid {
-			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.WithError(err).Error("provided username not valid")
-			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid").Error())
-		}
-		if _, err = w.Write(mess); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return nil
-	}
+// 	// Retrieve the username from the path and check if it's valid
+// 	bannerUsername := components.Username{Value: ps.ByName("username")}
+// 	err := bannerUsername.CheckIfValid()
+// 	if err != nil {
+// 		var mess []byte
+// 		if err == components.ErrUsernameNotValid {
+// 			w.WriteHeader(http.StatusBadRequest)
+// 			ctx.Logger.WithError(err).Error("provided username not valid")
+// 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
+// 		} else {
+// 			w.WriteHeader(http.StatusInternalServerError)
+// 			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+// 			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid").Error())
+// 		}
+// 		if _, err = w.Write(mess); err != nil {
+// 			ctx.Logger.WithError(err).Error("error while writing the response")
+// 		}
+// 		return nil
+// 	}
 
-	// Check if the username in the path is the same as the authenticated one
-	if bannerUsername.Value != username.Value {
-		w.WriteHeader(http.StatusUnauthorized)
-		ctx.Logger.WithError(err).Error("cannot unban an user on behalf of another user")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot unban an user on behalf of another user").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return nil
-	}
+// 	if bannerUsername.Value != username.Value {
+// 		w.WriteHeader(http.StatusUnauthorized)
+// 		ctx.Logger.Error("cannot unban an user on behalf of another user")
+// 		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot unban an user on behalf of another user").Error())); err != nil {
+// 			ctx.Logger.WithError(err).Error("error while writing the response")
+// 		}
+// 		return nil
+// 	}
 
-	return &bannerUsername
+// 	return &bannerUsername
 
-}
+// }

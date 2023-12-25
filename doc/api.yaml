@@ -181,7 +181,18 @@ components:
         $ref: '#/components/schemas/Comment'
       minItems: 0
       maxItems: 16
-    
+
+    Datetime:
+      title: datetime
+      description: |-
+        Date and time at which this post was created.
+      example: "2023-11-29 23:00:00"
+      type: string
+      format: date-time
+      pattern: '([0-9]{4})-(?:[0-9]{2})-([0-9]{2}) ([0-9{2}]):([0-9{2}]):([0-9{2}])'
+      minLength: 19
+      maxLength: 19  
+
     Error:
       title: Error
       description: |-
@@ -318,6 +329,12 @@ paths:
       tags: ['STREAM']
       security:
         - BearerAuth: []
+      parameters:
+        - in: query
+          name: datetime
+          schema:
+            $ref: '#/components/schemas/Datetime'
+          required: false
       responses:
         '200': # OK 
           description: Stream of posts is correctly returned to the user client.
@@ -625,6 +642,12 @@ paths:
         Return the list of users which liked the provided post.
       security:
         - BearerAuth: []
+      parameters:
+        - in: query
+          name: datetime
+          schema:
+            $ref: '#/components/schemas/Datetime'
+          required: false
       responses:
         '201': # OK Found
           description: |-
@@ -802,20 +825,10 @@ paths:
         - BearerAuth: []
       parameters:
         - in: query
-          name: start-datetime
-          description: |-   
-            Datetime up to which posts will be included in the user's stream.
-            (The ending datetime is implicit: now! In this way, in the stream
-            will be inclued all photos posted from 'start-datetime' up to now.)
-          schema: 
-            description: Starting datetime
-            type: string
-            format: date-time
-            pattern:  '/([0-9]{4})-(?:[0-9]{2})-([0-9]{2}) ([0-9]{2}):(?:[0-9]{2}):([0-9]{2})/'
-            minLength: 19
-            maxLength: 19
-            example: "2009-12-19 23:59:44"
-          required: true
+          name: datetime
+          schema:
+            $ref: '#/components/schemas/Datetime'
+          required: false
       responses:
         '200': # OK
             description: Return the list of comments under the post.
@@ -995,6 +1008,12 @@ paths:
         Return the list of the users that username follows.
       security:
         - BearerAuth: []
+      parameters:
+        - in: query
+          name: datetime
+          schema:
+            $ref: '#/components/schemas/Datetime'
+          required: false
       responses:
         '200': # OK Found
           description: |-
@@ -1153,6 +1172,12 @@ paths:
         Return the list of followers of the given username
       security:
         - BearerAuth: []
+      parameters:
+        - in: query
+          name: datetime
+          schema:
+            $ref: '#/components/schemas/Datetime'
+          required: false
       responses:
         '200': # OK
           description: Followers list successfully returned.
@@ -1208,6 +1233,12 @@ paths:
         Return the list of banned users for the specified user.
       security:
         - BearerAuth: []
+      parameters:
+        - in: query
+          name: datetime
+          schema:
+            $ref: '#/components/schemas/Datetime'
+          required: false
       responses:
         '201': # OK
           description: The list of banned users is successfully returned.

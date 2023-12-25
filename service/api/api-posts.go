@@ -490,7 +490,7 @@ func (rt _router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Retrieve the starting datetime (the last 16 posts between the provided datetime and the current one will be returned)
-	startDatetime := r.URL.Query().Get("start-datetime")
+	startDatetime := r.URL.Query().Get("datetime")
 	if len(startDatetime) == 0 {
 		t := time.Now()
 		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
@@ -567,13 +567,11 @@ func (rt _router) getPostComments(w http.ResponseWriter, r *http.Request, ps htt
 		return
 	}
 
-	startDatetime := r.URL.Query().Get("start-datetime")
+	startDatetime := r.URL.Query().Get("datetime")
 	if len(startDatetime) == 0 {
 		t := time.Now()
 		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
 	}
-
-	fmt.Println(startDatetime)
 
 	// Retrieve the list of comments of the given post
 	commentList, err := rt.db.GetPostComments(postID.Value, startDatetime)
@@ -597,6 +595,88 @@ func (rt _router) getPostComments(w http.ResponseWriter, r *http.Request, ps htt
 	if len(commentList.Comments) > 0 {
 		w.WriteHeader(http.StatusOK)
 		response, err := json.MarshalIndent(commentList.Comments, "", " ")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error(("error while encoding the response as JSON"))
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+				ctx.Logger.WithError(err).Error("error while encoding the response as JSON")
+			}
+			return
+		}
+		if _, err = w.Write(response); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error(("error while writing the response in the response body"))
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, err).Error())); err != nil {
+				ctx.Logger.WithError(err).Error("error while writing the response in the response body")
+			}
+			return
+		}
+	} else {
+		w.WriteHeader(http.StatusNoContent)
+	}
+
+}
+
+func (rt _router) getPostLikes(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+
+	// Retrieve the username of the authenticated user
+	usernameAuth := helperAuth(w, r, ps, ctx, rt)
+	if usernameAuth == nil {
+		return
+	}
+
+	// Retrieve the username of the owner of the post and the ID of it
+	usernameOwner, postID := helperPost(w, r, ps, ctx, rt, true)
+	if usernameOwner == nil || postID == nil {
+		return
+	}
+
+	// Check if one of the users banned the other one
+	err := rt.db.CheckIfBanned(usernameAuth.Value, usernameOwner.Value)
+	if err == nil {
+		w.WriteHeader(http.StatusForbidden)
+		ctx.Logger.Error("cannot get the comments of a post of a banned user or that has banned the authenticated user")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusForbidden, "cannot get the comments of a post of a banned user or that has banned the authenticated user").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	} else if err != sql.ErrNoRows {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while checking if the authenticated user banned the other user or viceversa")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the authenticated user banned the other user or viceversa").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	startDatetime := r.URL.Query().Get("datetime")
+	if len(startDatetime) == 0 {
+		t := time.Now()
+		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
+	}
+
+	// Retrieve the list of likes of the given post
+	userList, err := rt.db.GetPostLikes(postID.Value, startDatetime)
+	if err != nil {
+		var mess []byte
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.WithError(err).Error("provided post does not exist")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided post does not exist").Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while getting the likes of the given post")
+			mess = []byte(fmt.Errorf(components.StatusBadRequest, "error while getting the likes of the given post").Error())
+		}
+		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	if len(userList.Users) > 0 {
+		w.WriteHeader(http.StatusOK)
+		response, err := json.MarshalIndent(userList.Users, "", " ")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error(("error while encoding the response as JSON"))
