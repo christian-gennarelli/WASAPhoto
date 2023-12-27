@@ -1067,7 +1067,8 @@ paths:
       parameters:
         - in: query
           name: followed-username
-          $ref: '#/components/schemas/Username'
+          schema: 
+            $ref: '#/components/schemas/Username'
       responses:
         '204': # OK Created
           description: User 'username' successfully started to follow 'following_username'.
