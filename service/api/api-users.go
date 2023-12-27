@@ -15,7 +15,7 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	w.Header().Set("Content-Type", "application/json")
 
 	// Parse the string we want to match in usernames
-	searchedUsername := components.Username{Value: r.URL.Query().Get("searched-username")}
+	searchedUsername := components.Username{Value: r.URL.Query().Get("searched_username")}
 
 	// Check if the provided username is valid
 	err := searchedUsername.CheckIfValid()
