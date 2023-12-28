@@ -13,8 +13,7 @@ components:
       type: http
       scheme: bearer
       description: Bearer token for authentication in WASAPhoto.
-      bearerFormat: /^[A-F0-9]{64}$/i
-
+      bearerFormat: '^[a-z0-9]{64}$'
   schemas:
     
     ID:
@@ -31,7 +30,7 @@ components:
       example: "chri_genna02"
       minLength: 8
       maxLength: 16
-      pattern: '^[a-zA-Z0-9]([._-](?![._-])|[a-zA-Z0-9]){6,14}[a-zA-Z0-9]$'
+      pattern: '^[a-zA-Z0-9_-]{8,16}$'
 
     User:
       title: User
@@ -53,12 +52,7 @@ components:
           example: Christian Gennarelli 
         birthdate:
           description: Birthdate of the user
-          type: string
-          format: date
-          pattern: '([0-9]{4})-(?:[0-9]{2})-([0-9]{2})'
-          example: '2002-10-01'
-          minLength: 10
-          maxLength: 10
+          $ref: '#/components/schemas/Date'
       
     UserList:
       title: UserList
@@ -122,12 +116,7 @@ components:
         creation-datetime: # Useful for the representation of the poststream, which must be displayed in reverse chronological order
           description: |-
             Date and time at which this post was created.
-          example: "2023-11-29 23:00:00"
-          type: string
-          format: date-time
-          pattern: '([0-9]{4})-(?:[0-9]{2})-([0-9]{2}) ([0-9{2}]):([0-9{2}]):([0-9{2}])'
-          minLength: 19
-          maxLength: 19
+          $ref: '#/components/schemas/Datetime'
         description:
           description: Description of the photo provided by the user (if existing).
           type: string
@@ -162,12 +151,7 @@ components:
         creation-datetime: # Useful for the representation of the poststream, which must be displayed in reverse chronological order
           description: |-
             Date and time at which this comment was created.
-          example: "2023-11-29 23:00:00"
-          type: string
-          format: date-time
-          pattern: '([0-9]{4})-(?:[0-9]{2})-([0-9]{2}) ([0-9{2}]):([0-9{2}]):([0-9{2}])'
-          minLength: 19
-          maxLength: 19
+          $ref: '#/components/schemas/Datetime'
         author:
           $ref: '#/components/schemas/Username'
     
@@ -182,14 +166,24 @@ components:
       minItems: 0
       maxItems: 16
 
+    Date:
+      title: date
+      description: Date.
+      example: "2023-11-29"
+      type: string
+      format: date
+      pattern: '^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$'
+      minLength: 10
+      maxLength: 10  
+
     Datetime:
       title: datetime
       description: |-
-        Date and time at which this post was created.
+        Date and time.
       example: "2023-11-29 23:00:00"
       type: string
       format: date-time
-      pattern: '([0-9]{4})-(?:[0-9]{2})-([0-9]{2}) ([0-9{2}]):([0-9{2}]):([0-9{2}])'
+      pattern: '^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]) (0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$'
       minLength: 19
       maxLength: 19  
 
@@ -313,13 +307,7 @@ paths:
           (The ending datetime is implicit: now! In this way, in the stream
           will be inclued all photos posted from 'start-datetime' up to now.)
         schema: 
-          description: Starting datetime
-          type: string
-          format: date-time
-          pattern:  '/([0-9]{4})-(?:[0-9]{2})-([0-9]{2}) ([0-9]{2}):(?:[0-9]{2}):([0-9]{2})/'
-          minLength: 19
-          maxLength: 19
-          example: "2009-12-19 23:59:44"
+          $ref: '#/components/schemas/Datetime'
         required: true
 
     get:

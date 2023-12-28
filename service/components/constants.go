@@ -2,9 +2,10 @@ package components
 
 import "fmt"
 
-const USERNAME_REGEXP = "" //"/^[a-zA-Z0-9]([._-](?![._-])|[a-zA-Z0-9]){6,14}[a-zA-Z0-9]$/"
-const ID_REGEXP = ""       //"/^[A-Z0-9]{64}$/"
-const COMMENT_REGEXP = ""
+const USERNAME_REGEXP = "^[a-zA-Z0-9_-]{8,16}$"
+const ID_REGEXP = "^[a-z0-9]{64}$"
+const DATETIME_REGEXP = "^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[01])$"
+const COMMENT_REGEXP = "^[a-zA-Z0-9.,!?@#%^&*()_+-=:;'\"<>/[\\]{}`~\\s]{1,150}$"
 
 const StatusInternalServerError = "{\"ErrorCode\": 500, \"Description\": \"Internal Server Error: %s\"}"
 const StatusBadRequest = "{\"ErrorCode\": 400, \"Description\": \"Bad Request: %s\"}"
