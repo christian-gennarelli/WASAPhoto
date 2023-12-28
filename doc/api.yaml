@@ -247,7 +247,7 @@ paths:
   /users/:
     parameters:
       - in: query
-        name: searched-username
+        name: searched_username
         description: Username that the authenticated user is trying to find.
         schema:
           $ref: '#/components/schemas/Username'
@@ -301,7 +301,7 @@ paths:
           $ref: '#/components/schemas/Username'
         required: true
       - in: query
-        name: start-datetime
+        name: datetime
         description: |-   
           Datetime up to which posts will be included in the user's stream.
           (The ending datetime is implicit: now! In this way, in the stream
@@ -428,7 +428,7 @@ paths:
         - BearerAuth: []
       parameters:
         - in: query
-          name: new-username
+          name: new_username
           schema:
             $ref: '#/components/schemas/Username'
       responses: 
@@ -1054,8 +1054,9 @@ paths:
         - BearerAuth: []
       parameters:
         - in: query
-          name: followed-username
-          $ref: '#/components/schemas/Username'
+          name: followed_username
+          schema: 
+            $ref: '#/components/schemas/Username'
       responses:
         '204': # OK Created
           description: User 'username' successfully started to follow 'following_username'.
