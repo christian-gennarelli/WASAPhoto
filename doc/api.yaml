@@ -71,9 +71,9 @@ components:
       type: string
       description: |-
         Binary representation of a photo, wrapped in a base64-encoded string. 
-        Only profile pics are sent via base64 in JSON for efficiency reasons.
-        Other kind of images, like posts, will contain the URL to the actual
-        image stored on the server.
+        Only multiple profile pics are sent via base64 in JSON for efficiency reasons.
+        URL pointing to post images will be first sent, and then the client will have the ability
+        to obtain the photo via a separate endpoint, i.e. GetPhotoFromURL.
       minLength: 0
       maxLength: 2000000 # 2MB photo
       example: iVBORw0KGgbW8gY2hyaXN0aWFuCghyaXN0aWFuCgw0KGgbW8gYyaXN0aWFuCgw0KGgbW8gW8gYyaXN0aW8gYyaXN0aWF

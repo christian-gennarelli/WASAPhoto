@@ -107,7 +107,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 	CREATE TABLE IF NOT EXISTS User (
 		ID STRING UNIQUE NOT NULL,
 		Username STRING PRIMARY KEY NOT NULL,
-		ProfilePicPath STRING DEFAULT 'http://localhost:3000/photos/profile_pics/default.png',
+		ProfilePicPath STRING DEFAULT 'photos/profile_pics/default.png',
 		Birthdate STRING,
 		Name STRING
 	);

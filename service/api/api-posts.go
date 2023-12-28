@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"image"
 	"io"
 	"net/http"
 	"os"
@@ -132,16 +133,6 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 
 	w.Header().Set("Content-Type", "application/json")
 
-	// Check if the content of the request body is in a JSON format
-	// if contentType := r.Header.Get("Content-Type"); contentType != "application/json" {
-	// 	w.WriteHeader(http.StatusUnsupportedMediaType)
-	// 	ctx.Logger.Error("unsupported media type provided")
-	// 	if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnsupportedMediaType).Error())); err != nil {
-	// 		ctx.Logger.WithError(err).Error("error while writing the response")
-	// 	}
-	// 	return
-	// }
-
 	// Retrieve the username of the authenticated user
 	username := helperAuth(w, r, ps, ctx, rt)
 	if username == nil {
@@ -180,7 +171,6 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		}
 		return
 	}
-
 	comment.Body = string(body)
 
 	if err := comment.CheckIfValid(); err != nil {
@@ -344,18 +334,56 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		}
 		return
 	}
-
-	// Check if the file sent by the client is actually an image (NOT WORKING - DON'T KNOW WHY)
-	// if _, _, err := image.DecodeConfig(fileReader); err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	ctx.Logger.WithError(err).Error("provided file is not an image")
-	// 	if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "provided file is not an image").Error())); err != nil {
-	// 		ctx.Logger.WithError(err).Error("error while writing the response")
-	// 	}
-	// 	return
-	// }
-
 	defer fileReader.Close()
+
+	// Check if the provided file is an image (check the first 512 bytes to determine its Content-Type)
+	buff := make([]byte, 512)
+	if _, err = fileReader.Read(buff); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while checking if the provided file is an image")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the provided file is an image").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+	fmt.Println(http.DetectContentType(buff))
+	if http.DetectContentType(buff) != "image/png" {
+		w.WriteHeader(http.StatusBadRequest)
+		ctx.Logger.Error("provided file not an image")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "provided file not an image").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	// Check the size of the image: it must be 1024x1024 px
+	_, err = fileReader.Seek(0, 0) // Move the byte reader back to the beginning of the file
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while checking the info about the photo")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking the info about the photo").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	im, _, err := image.DecodeConfig(fileReader)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while checking the info about the photo")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking the info about the photo").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+	if im.Height != 1024 || im.Width != 1024 {
+		w.WriteHeader(http.StatusBadRequest)
+		ctx.Logger.Error("photo does not satisfy size requirements: it must be 1024x1024 px")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "photo does not satisfy size requirements: it must be 1024x1024 px").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
 
 	// Accessing the description field
 	description := formData.Value["description"][0]
@@ -377,12 +405,23 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		}
 		return
 	}
+
+	_, err = fileReader.Seek(0, 0) // Move the byte reader back to the beginning of the file
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error before creating the photo locally")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error before creating the photo locally").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
 	// Save the file locally
 	uploadedFile, err := os.Create(post.Photo)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while loading the photo locally")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while loading the photo locally").Error())); err != nil {
+		ctx.Logger.WithError(err).Error("error while creating the photo locally")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while creating the photo locally").Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		if _, err := rt.db.DeletePost(post.PostID.Value); err != nil {
@@ -391,6 +430,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 	defer uploadedFile.Close()
+
 	// Copy the file content to the local file
 	_, err = io.Copy(uploadedFile, fileReader)
 	if err != nil {
