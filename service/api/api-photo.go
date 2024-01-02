@@ -40,9 +40,25 @@ func (rt _router) getPhotoFromURL(w http.ResponseWriter, r *http.Request, ps htt
 	}
 
 	// Read the image
-	img, _ := os.Open("photos/" + path)
+	img, err := os.Open("photos/" + path)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while opening the file specified by the given path")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "error while opening the file specified by the given path").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
 	reader := bufio.NewReader(img)
-	content, _ := io.ReadAll(reader)
+	content, err := io.ReadAll(reader)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while reading the content of the file specified by the given path")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "error while reading the content of the file specified by the given path").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
 
 	// Send the image to the client
 	if _, err = w.Write(content); err != nil {
