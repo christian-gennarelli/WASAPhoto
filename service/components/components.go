@@ -69,7 +69,7 @@ func (Username Username) CheckIfValid() error {
 	}
 
 	if !regex.MatchString(Username.Value) {
-		return ErrIDNotValid
+		return ErrUsernameNotValid
 	}
 
 	return nil
@@ -83,7 +83,7 @@ func (Id ID) CheckIfValid() error {
 	}
 
 	if !regex.MatchString(Id.Value) {
-		return ErrUsernameNotValid
+		return ErrIDNotValid
 	}
 
 	return nil
