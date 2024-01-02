@@ -1380,7 +1380,7 @@ paths:
         required: true
     
     get:
-      operationId: GetPhotoFromURL
+      operationId: getPhotoFromURL
       tags: ['PHOTO']
       summary: Get the requested photo
       description: |-
