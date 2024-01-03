@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	_ "image/png"
 	"io"
 	"net/http"
 	"os"
@@ -319,19 +320,15 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		}
 		return
 	}
+
 	// Access the request body
 	formData := r.MultipartForm
-
-	// Accessing the photo file
 	photo := formData.File["photo"][0]
-	// Open the file
+
+	// Access the photo file
 	fileReader, err := photo.Open()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while opening the photo sent in the request")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while opening the photo sent in the request").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
+		http.Error(w, "Unable to open photo file", http.StatusInternalServerError)
 		return
 	}
 	defer fileReader.Close()
@@ -346,7 +343,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		}
 		return
 	}
-	fmt.Println(http.DetectContentType(buff))
+	ctx.Logger.Info(http.DetectContentType(buff))
 	if http.DetectContentType(buff) != "image/png" {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.Error("provided file not an image")
@@ -360,8 +357,8 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	_, err = fileReader.Seek(0, 0) // Move the byte reader back to the beginning of the file
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while checking the info about the photo")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking the info about the photo").Error())); err != nil {
+		ctx.Logger.WithError(err).Error("error while checking the info about the photo (seeking)")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking the info about the photo (seeking)").Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
@@ -369,24 +366,35 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 
 	im, _, err := image.DecodeConfig(fileReader)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while checking the info about the photo")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking the info about the photo").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
+		if err.Error() == "image: unknown format" {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.Error("provided image not in a valid format")
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided image not in a valid format").Error())); err != nil {
+				ctx.Logger.WithError(err).Error("error while writing the response")
+			}
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while checking the info about the photo")
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking the info about the photo").Error())); err != nil {
+				ctx.Logger.WithError(err).Error("error while writing the response")
+			}
 		}
 		return
 	}
-	if im.Height != 1024 || im.Width != 1024 {
-		w.WriteHeader(http.StatusBadRequest)
-		ctx.Logger.Error("photo does not satisfy size requirements: it must be 1024x1024 px")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "photo does not satisfy size requirements: it must be 1024x1024 px").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return
-	}
+	ctx.Logger.Info("Height:" + strconv.FormatInt(int64(im.Height), 10))
+	ctx.Logger.Info("Width: " + strconv.FormatInt(int64(im.Width), 10))
+	// if im.Height == 1024 || im.Width == 1024 {
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	ctx.Logger.Error("photo does not satisfy size requirements: it must be 1024x1024 px")
+	// 	if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "photo does not satisfy size requirements: it must be 1024x1024 px").Error())); err != nil {
+	// 		ctx.Logger.WithError(err).Error("error while writing the response")
+	// 	}
+	// 	return
+	// }
 
 	// Accessing the description field
 	description := formData.Value["description"][0]
+
 	if err := (components.Comment{Body: description}).CheckIfValid(); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.WithError(err).Error("provided comment not valid")
