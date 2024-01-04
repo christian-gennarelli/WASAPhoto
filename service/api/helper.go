@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -14,9 +15,8 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 
 	// Retrieve the Auth token and check if is valid
 	token := components.ID{Value: r.Header.Get("Authorization")}
-	err := token.CheckIfValid()
-	if err != nil {
-		if err == components.ErrIDNotValid {
+	if err := token.CheckIfValid(); err != nil {
+		if errors.Is(err, components.ErrIDNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.WithError(err).Error("provided auth token not valid")
 			if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided auth token not valid").Error())); err != nil {
@@ -34,10 +34,10 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 
 	// Retrieve the username (if valid) associated to the given Auth token and check if there exists an user registered with such token
 	var username *components.Username
-	username, err = rt.db.GetUsernameByToken(token.Value)
+	username, err := rt.db.GetUsernameByToken(token.Value)
 	if err != nil {
 		var mess []byte
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			w.WriteHeader(http.StatusUnauthorized)
 			ctx.Logger.WithError(err).Error("no user found with the provided authenticated token")
 			mess = []byte(fmt.Errorf(components.StatusUnauthorized, "no user found with the provided token").Error())
@@ -60,10 +60,9 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 
 	// Retrieve the username from the path and check if it is valid
 	ownerUsername := components.Username{Value: ps.ByName("username")}
-	err := ownerUsername.CheckIfValid()
-	if err != nil {
+	if err := ownerUsername.CheckIfValid(); err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusUnauthorized)
 			mess = []byte(fmt.Errorf(components.StatusUnauthorized, "provided username not valid").Error())
 			ctx.Logger.Error("provided username not valid")
@@ -84,10 +83,9 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 
 	// Retrieve the id of the post the user wants to like and check if it exists
 	postID := components.ID{Value: ps.ByName("post_id")}
-	err = postID.CheckIfValid()
-	if err != nil {
+	if err := postID.CheckIfValid(); err != nil {
 		var mess []byte
-		if err == components.ErrIDNotValid {
+		if errors.Is(err, components.ErrIDNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.Error("provided post id not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided post id not valid").Error())
@@ -103,10 +101,9 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 	}
 
 	// Check if the username in the path is the owner of the given post
-	err = rt.db.CheckIfOwnerPost(ownerUsername.Value, postID.Value)
-	if err != nil {
+	if err := rt.db.CheckIfOwnerPost(ownerUsername.Value, postID.Value); err != nil {
 		var mess []byte
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			w.WriteHeader(http.StatusNotFound)
 			ctx.Logger.WithError(err).Error("either the username or the post not found; alternatively, the username does not own the provided post")
 			mess = []byte(fmt.Errorf(components.StatusNotFound, "either the username or the post not found; alternatively, the username does not own the provided post").Error())

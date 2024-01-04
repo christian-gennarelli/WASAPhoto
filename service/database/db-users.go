@@ -32,14 +32,14 @@ func (db appdbimpl) PostUserID(Username string) (*components.ID, error) {
 
 			stmt, err = db.c.Prepare("INSERT INTO User (Username, ID) VALUES (?, ?)")
 			if err != nil {
-				return nil, err //fmt.Errorf("error while preparing the SQL statement to create the new user")
+				return nil, err
 			}
 
 			if _, err = stmt.Exec(Username, ID.Value); err != nil {
-				return nil, err //fmt.Errorf("error while performing the query to create the new user")
+				return nil, err
 			}
 		} else {
-			return nil, err //fmt.Errorf("error while performing the query to obtain the id for the given user (if it exists)")
+			return nil, err
 		}
 	} else {
 		ID.Value = id
@@ -77,9 +77,18 @@ func (db appdbimpl) SearchUser(Username string) (*components.UserList, error) {
 			return nil, fmt.Errorf("error while extracting the username from the query")
 		}
 
-		img, _ := os.Open(user.ProfilePic)
+		// Open the image
+		img, err := os.Open(user.ProfilePic)
+		if err != nil {
+			return nil, err
+		}
 		reader := bufio.NewReader(img)
-		content, _ := io.ReadAll(reader)
+		// Read it
+		content, err := io.ReadAll(reader)
+		if err != nil {
+			return nil, err
+		}
+		// Convert it in base64
 		user.ProfilePic = base64.StdEncoding.EncodeToString(content)
 
 		// Insert into the returned list of usernames
@@ -96,13 +105,12 @@ func (db appdbimpl) UpdateUsername(NewUsername string, OldUsername string) error
 
 	stmt, err := db.c.Prepare("UPDATE User SET Username = ? WHERE Username = ?")
 	if err != nil {
-		return err //fmt.Errorf("error while preparing the SQL statement to updating the username")
+		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(NewUsername, OldUsername)
-	if err != nil {
-		return err //fmt.Errorf("error while performing the query to obtain the info about the user with the provided username")
+	if _, err = stmt.Exec(NewUsername, OldUsername); err != nil {
+		return err
 	}
 
 	return nil
@@ -113,14 +121,14 @@ func (db appdbimpl) GetUsernameByToken(Id string) (*components.Username, error) 
 
 	stmt, err := db.c.Prepare("SELECT Username FROM User WHERE ID = ?")
 	if err != nil {
-		return nil, err //fmt.Errorf("error encountered while preparing the query to retrieve the username associated with the given token")
+		return nil, err
 	}
 	defer stmt.Close()
 
 	var username components.Username
 	err = stmt.QueryRow(Id).Scan(&username.Value)
 	if err != nil {
-		return nil, err //fmt.Errorf("error while executing the query to retrieve the username associated with the given token")
+		return nil, err
 	}
 
 	return &username, nil
@@ -131,13 +139,13 @@ func (db appdbimpl) GetOwnerUsernameOfComment(Id string) (*components.Username, 
 
 	stmt, err := db.c.Prepare("SELECT Author FROM Comment WHERE CommentID = ?")
 	if err != nil {
-		return nil, err //fmt.Errorf("error while preparing the SQL statement to retrieve the author of the provided comment")
+		return nil, err
 	}
 	defer stmt.Close()
 
 	var username components.Username
 	if err = stmt.QueryRow(Id).Scan(&username.Value); err != nil {
-		return nil, err //fmt.Errorf("error while executing the SQL statement to retrieve the author of the provided comment")
+		return nil, err
 	}
 
 	return &username, nil

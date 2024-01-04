@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -18,10 +19,9 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	searchedUsername := components.Username{Value: r.URL.Query().Get("searched_username")}
 
 	// Check if the provided username is valid
-	err := searchedUsername.CheckIfValid()
-	if err != nil {
+	if err := searchedUsername.CheckIfValid(); err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.WithError(err).Error("provided username not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
@@ -58,17 +58,16 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 
 	if len(userList.Users) > 0 {
 		w.WriteHeader(http.StatusOK)
+		if _, err = w.Write(response); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			ctx.Logger.WithError(err).Error("error while writing the response body in the response body")
+			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while writing the response body in the response body" /*err*/).Error())); err != nil {
+				ctx.Logger.WithError(err).Error("error while writing the response")
+			}
+			return
+		}
 	} else {
 		w.WriteHeader(http.StatusNoContent)
-	}
-
-	if _, err = w.Write(response); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while writing the response body in the response body")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while writing the response body in the response body" /*err*/).Error())); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return
 	}
 
 }

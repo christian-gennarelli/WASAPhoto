@@ -18,5 +18,3 @@ const StatusUnsupportedMediaType = "{\"ErrorCode\": 415, \"Description\": \"Unsu
 var ErrIDNotValid = fmt.Errorf("provided ID not valid")
 var ErrUsernameNotValid = fmt.Errorf("provided username not valid")
 var ErrCommentNotValid = fmt.Errorf("provided comment not valid")
-var ErrForeignKeyConstraint = fmt.Errorf("FOREIGN KEY constraint failed")
-var ErrUniqueConstraintUsername = fmt.Errorf("UNIQUE constraint failed: User.Username")

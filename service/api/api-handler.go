@@ -44,8 +44,8 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.GET("/users/", rt.wrap(rt.searchUser))
 
 	// Profile routes
-	rt.router.GET("/users/:username/profile", rt.wrap(rt.getUserProfile))
-	rt.router.PUT("/users/:username/profile", rt.wrap(rt.setMyUserName))
+	rt.router.GET("/users/:username/profile/", rt.wrap(rt.getUserProfile))
+	rt.router.PUT("/users/:username/profile/", rt.wrap(rt.setMyUserName))
 
 	// Photo routes
 	rt.router.GET("/photos/:photo_path", rt.wrap(rt.getPhotoFromURL))
@@ -57,7 +57,7 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.POST("/users/:username/profile/posts/:post_id/comments/", rt.wrap(rt.commentPhoto))
 	rt.router.DELETE("/users/:username/profile/posts/:post_id/comments/:comment_id", rt.wrap(rt.uncommentPhoto))
 	rt.router.POST("/users/:username/profile/posts/", rt.wrap(rt.uploadPhoto))
-	rt.router.DELETE("/users/:username/profile/posts/:post_id", rt.wrap(rt.deletePhoto))
+	rt.router.DELETE("/users/:username/profile/posts/:post_id/", rt.wrap(rt.deletePhoto))
 	rt.router.GET("/users/:username/profile/posts/:post_id/comments/", rt.wrap(rt.getPostComments))
 
 	// Stream routes

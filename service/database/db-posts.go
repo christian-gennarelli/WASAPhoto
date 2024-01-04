@@ -12,13 +12,13 @@ func (db appdbimpl) CheckIfOwnerPost(Username string, PostID string) error {
 
 	stmt, err := db.c.Prepare("SELECT P.Author FROM User U JOIN Post P ON U.Username = P.Author WHERE U.Username = ? AND P.PostID = ?")
 	if err != nil {
-		return err //fmt.Errorf("error while preparing the SQL statement to check if the given post is owned by the given user")
+		return err
 	}
 	defer stmt.Close()
 
 	var author components.Username
 	if err = stmt.QueryRow(Username, PostID).Scan(&author.Value); err != nil {
-		return err //fmt.Errorf("error while executing the SQL query to retrieve the username associated to the given Auth token")
+		return err
 	}
 
 	return nil
@@ -29,7 +29,7 @@ func (db appdbimpl) AddLikeToPost(Username string, PostID string) error {
 
 	stmt, err := db.c.Prepare("INSERT INTO Like (PostID, Liker, CreationDatetime) VALUES (?, ?, ?)")
 	if err != nil {
-		return err //fmt.Errorf("error while preparing the SQL statement to add the like")
+		return err
 	}
 	defer stmt.Close()
 
@@ -37,7 +37,7 @@ func (db appdbimpl) AddLikeToPost(Username string, PostID string) error {
 	CreationDatetime := strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
 	_, err = stmt.Exec(PostID, Username, CreationDatetime)
 	if err != nil {
-		return err //fmt.Errorf("error while executing the query to add the like")
+		return err
 	}
 
 	return nil
@@ -48,12 +48,12 @@ func (db appdbimpl) RemoveLikeFromPost(Username string, PostID string) error {
 
 	stmt, err := db.c.Prepare("DELETE FROM Like WHERE PostID = ? AND Liker = ?")
 	if err != nil {
-		return err //fmt.Errorf("error while preparing the SQL statement to add the like")
+		return err
 	}
 	defer stmt.Close()
 
 	if _, err = stmt.Exec(PostID, Username); err != nil {
-		return err //fmt.Errorf("error while executing the query to add the like")
+		return err
 	}
 
 	return nil
@@ -64,15 +64,15 @@ func (db appdbimpl) AddCommentToPost(PostID string, Body string, Author string) 
 
 	stmt, err := db.c.Prepare("INSERT INTO Comment (PostID, Author, CreationDatetime, Comment) VALUES (?, ?, ?, ?)")
 	if err != nil {
-		return err //fmt.Errorf("error while preparing the SQL statement to add the comment")
+		return err
 	}
 	defer stmt.Close()
 
 	t := time.Now()
 	CreationDatetime := strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
-	_, err = stmt.Exec(PostID, Author, CreationDatetime, Body)
-	if err != nil {
-		return err //fmt.Errorf("error while executing the query to add the comment")
+
+	if _, err = stmt.Exec(PostID, Author, CreationDatetime, Body); err != nil {
+		return err
 	}
 
 	return nil
@@ -83,13 +83,12 @@ func (db appdbimpl) RemoveCommentFromPost(PostID string, CommentID string) error
 
 	stmt, err := db.c.Prepare("DELETE FROM Comment WHERE PostID = ? AND CommentID = ?")
 	if err != nil {
-		return err //fmt.Errorf("error while preparing the SQL statement to remove the comment")
+		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(PostID, CommentID)
-	if err != nil {
-		return err //fmt.Errorf("error while executing the query to remove the comment")
+	if _, err = stmt.Exec(PostID, CommentID); err != nil {
+		return err
 	}
 
 	return nil
@@ -108,6 +107,7 @@ func (db appdbimpl) GetUserStream(startDatetime string, username string) (*compo
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var postStream components.Stream
 	for rows.Next() {
@@ -122,36 +122,37 @@ func (db appdbimpl) GetUserStream(startDatetime string, username string) (*compo
 
 }
 
-func (db appdbimpl) UploadPost(username string, description string) (error, *components.Post) {
+func (db appdbimpl) UploadPost(username string, description string) (*components.Post, error) {
 
 	var id int
 	if err := db.c.QueryRow("SELECT PostID FROM Post ORDER BY PostID DESC LIMIT 1").Scan(&id); err != nil {
 		if err == sql.ErrNoRows {
 			id = 0
 		} else {
-			return err, nil
+			return nil, err
 		}
 	}
 
 	stmt, err := db.c.Prepare("INSERT INTO Post (Author, CreationDatetime, Description, PhotoPath) VALUES (?, ?, ?, ?)")
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
+	defer stmt.Close()
 
 	t := time.Now()
 	creationDatetime := strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
 	photoPath := "photos/posts/" + username + "_" + strconv.Itoa(id+1) + ".png"
 	if _, err := stmt.Exec(username, creationDatetime, description, photoPath); err != nil {
-		return err, nil
+		return nil, err
 	}
 
-	return nil, &components.Post{
+	return &components.Post{
 		PostID:           components.ID{Value: strconv.Itoa(id + 1)},
 		Author:           components.Username{Value: username},
 		CreationDatetime: creationDatetime,
 		Description:      description,
 		Photo:            photoPath,
-	}
+	}, nil
 
 }
 
@@ -161,6 +162,7 @@ func (db appdbimpl) DeletePost(postID string) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer stmt.Close()
 
 	var photoPath string
 	if err := stmt.QueryRow(postID).Scan(&photoPath); err != nil {
@@ -181,11 +183,13 @@ func (db appdbimpl) GetPostComments(postID string, startDatetime string) (*compo
 	if err != nil {
 		return nil, err
 	}
+	defer stmt.Close()
 
 	rows, err := stmt.Query(postID, startDatetime)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var commentList components.CommentList
 	for rows.Next() {
@@ -206,11 +210,13 @@ func (db appdbimpl) GetPostLikes(postID string, startDatetime string) (*componen
 	if err != nil {
 		return nil, err
 	}
+	defer stmt.Close()
 
 	rows, err := stmt.Query(postID, startDatetime)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var userList components.UserList
 	for rows.Next() {

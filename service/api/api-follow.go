@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
 	"github.com/julienschmidt/httprouter"
+	"github.com/mattn/go-sqlite3"
 )
 
 func (rt _router) getFollowingList(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
@@ -24,11 +26,11 @@ func (rt _router) getFollowingList(w http.ResponseWriter, r *http.Request, ps ht
 	}
 
 	// Obtain the username from the path and check if it's valid
-	username := components.Username{Value: ps.ByName("username")}
-	err := username.CheckIfValid()
+	followingUsername := components.Username{Value: ps.ByName("username")}
+	err := followingUsername.CheckIfValid()
 	if err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.Error("provided username not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
@@ -44,7 +46,7 @@ func (rt _router) getFollowingList(w http.ResponseWriter, r *http.Request, ps ht
 	}
 
 	// Check if the authenticated user banned the user of viceversa
-	err = rt.db.CheckIfBanned(authUsername.Value, username.Value)
+	err = rt.db.CheckIfBanned(authUsername.Value, followingUsername.Value)
 	if err == nil {
 		w.WriteHeader(http.StatusForbidden)
 		ctx.Logger.Error("cannot get the following list of a banned user or that has banned the authenticated user")
@@ -52,10 +54,10 @@ func (rt _router) getFollowingList(w http.ResponseWriter, r *http.Request, ps ht
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
-	} else if err != sql.ErrNoRows {
+	} else if !errors.Is(err, sql.ErrNoRows) {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the authenticated user banned the other user or viceversa")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "error while checking if the authenticated user banned the other user or viceversa").Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the authenticated user banned the other user or viceversa").Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
@@ -68,7 +70,7 @@ func (rt _router) getFollowingList(w http.ResponseWriter, r *http.Request, ps ht
 	}
 
 	// Send the request to the database
-	users, err := rt.db.GetFollowingList(username.Value, startDatetime)
+	users, err := rt.db.GetFollowingList(followingUsername.Value, startDatetime)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while getting the list of followings")
@@ -108,8 +110,8 @@ func (rt _router) followUser(w http.ResponseWriter, r *http.Request, ps httprout
 	w.Header().Set("Content-Type", "application/json")
 
 	// Retrieve the username of the authenticated user
-	username := helperAuth(w, r, ps, ctx, rt)
-	if username == nil {
+	authUsername := helperAuth(w, r, ps, ctx, rt)
+	if authUsername == nil {
 		return
 	}
 
@@ -134,7 +136,7 @@ func (rt _router) followUser(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	// Check if the username from the path is the same as the authenticated one
-	if username.Value != followerUsername.Value {
+	if authUsername.Value != followerUsername.Value {
 		w.WriteHeader(http.StatusForbidden)
 		ctx.Logger.Error("cannot follow an user on behalf of another user")
 		if _, err := w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "cannot follow an user on behalf of another user").Error())); err != nil {
@@ -147,7 +149,7 @@ func (rt _router) followUser(w http.ResponseWriter, r *http.Request, ps httprout
 	followedUsername := components.Username{Value: r.URL.Query().Get("followed_username")}
 	if err = followedUsername.CheckIfValid(); err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.Error("provided username not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
@@ -163,7 +165,7 @@ func (rt _router) followUser(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	// Check if the user is trying to follow itself
-	if username.Value == followedUsername.Value {
+	if followerUsername.Value == followedUsername.Value {
 		w.WriteHeader(http.StatusForbidden)
 		ctx.Logger.Error("cannot auto-follow")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusForbidden, "cannot-autofollow").Error())); err != nil {
@@ -173,7 +175,7 @@ func (rt _router) followUser(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	// Check if the authenticated user banned the user is trying to follow or viceversa
-	err = rt.db.CheckIfBanned(username.Value, followedUsername.Value)
+	err = rt.db.CheckIfBanned(followerUsername.Value, followedUsername.Value)
 	if err == nil {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.Error("cannot follow a banned user or that has banned the authenticated user")
@@ -181,19 +183,19 @@ func (rt _router) followUser(w http.ResponseWriter, r *http.Request, ps httprout
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
-	} else if err != sql.ErrNoRows {
+	} else if !errors.Is(err, sql.ErrNoRows) {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the authenticated user banned the other user or viceversa")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "error while checking if the authenticated user banned the other user or viceversa").Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the authenticated user banned the other user or viceversa").Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
 
 	// Add the authenticated username to the list of users following the username provided in the path
-	err = rt.db.FollowUser(username.Value, followedUsername.Value)
+	err = rt.db.FollowUser(followerUsername.Value, followedUsername.Value)
 	if err != nil {
-		if err == components.ErrForeignKeyConstraint {
+		if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.Error("impossible to follow a non-existing user")
 			if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "impossible to follow a non-existing user").Error())); err != nil {
@@ -217,8 +219,8 @@ func (rt _router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpro
 	w.Header().Set("Content-Type", "application/json")
 
 	// Retrieve the username of the authenticated user
-	username := helperAuth(w, r, ps, ctx, rt)
-	if username == nil {
+	authUsername := helperAuth(w, r, ps, ctx, rt)
+	if authUsername == nil {
 		return
 	}
 
@@ -227,14 +229,14 @@ func (rt _router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpro
 	err := followerUsername.CheckIfValid()
 	if err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.Error("provided username not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid").Error())
 		}
 		if _, err = w.Write(mess); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
@@ -243,7 +245,7 @@ func (rt _router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	// Check if the authenticated user and the follower username are the same
-	if username.Value != followerUsername.Value {
+	if authUsername.Value != followerUsername.Value {
 		w.WriteHeader(http.StatusForbidden)
 		ctx.Logger.Error("cannot unfollow an user on behalf of another user")
 		if _, err := w.Write([]byte(fmt.Errorf(components.StatusForbidden, "cannot unfollow an user on behalf of another user").Error())); err != nil {
@@ -254,10 +256,9 @@ func (rt _router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpro
 
 	// Retrieve the username of the following user and check if it's valid
 	followedUsername := components.Username{Value: ps.ByName("followed_username")}
-	err = followedUsername.CheckIfValid()
-	if err != nil {
+	if err = followedUsername.CheckIfValid(); err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.Error("provided username not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
@@ -275,8 +276,7 @@ func (rt _router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpro
 	// No need of ban checks
 
 	// Add the authenticated username to the list of users following the username provided in the path
-	err = rt.db.UnfollowUser(followerUsername.Value, followedUsername.Value)
-	if err != nil {
+	if err = rt.db.UnfollowUser(followerUsername.Value, followedUsername.Value); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while unfollowing an user")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while unfollowing an user").Error())); err != nil {
@@ -294,8 +294,8 @@ func (rt _router) getFollowersList(w http.ResponseWriter, r *http.Request, ps ht
 	w.Header().Set("Content-Type", "application/json")
 
 	// Retrieve the username of the authenticated user
-	authUsername := helperAuth(w, r, ps, ctx, rt)
-	if authUsername == nil {
+	usernameAuth := helperAuth(w, r, ps, ctx, rt)
+	if usernameAuth == nil {
 		return
 	}
 
@@ -311,7 +311,7 @@ func (rt _router) getFollowersList(w http.ResponseWriter, r *http.Request, ps ht
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())
+			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid").Error())
 		}
 		if _, err = w.Write(mess); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
@@ -320,7 +320,7 @@ func (rt _router) getFollowersList(w http.ResponseWriter, r *http.Request, ps ht
 	}
 
 	// Check if the authenticated user banned the user of viceversa
-	err = rt.db.CheckIfBanned(authUsername.Value, username.Value)
+	err = rt.db.CheckIfBanned(usernameAuth.Value, username.Value)
 	if err == nil {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.Error("cannot get the followers list of a banned user or that has banned the authenticated user")
@@ -328,10 +328,10 @@ func (rt _router) getFollowersList(w http.ResponseWriter, r *http.Request, ps ht
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
-	} else if err != sql.ErrNoRows {
+	} else if !errors.Is(err, sql.ErrNoRows) {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the authenticated user banned the other user or viceversa")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "error while checking if the authenticated user banned the other user or viceversa").Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the authenticated user banned the other user or viceversa").Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return

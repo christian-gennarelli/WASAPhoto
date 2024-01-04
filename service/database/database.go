@@ -60,7 +60,7 @@ type AppDatabase interface {
 	AddCommentToPost(PostID string, Body string, Author string) error
 	RemoveCommentFromPost(PostID string, CommentID string) error
 	GetUserStream(startDatetime string, username string) (*components.Stream, error)
-	UploadPost(username string, description string) (error, *components.Post)
+	UploadPost(username string, description string) (*components.Post, error)
 	DeletePost(postID string) (*string, error)
 	GetPostComments(postID string, startDatetime string) (*components.CommentList, error)
 	GetPostLikes(postID string, startDatetime string) (*components.UserList, error)
@@ -152,7 +152,6 @@ func New(db *sql.DB) (AppDatabase, error) {
 		FOREIGN KEY (Banned) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE,
 		FOREIGN KEY (Banner) REFERENCES User(Username) ON DELETE CASCADE ON UPDATE CASCADE
 	);`)
-
 	if err != nil {
 		return nil, err
 	}

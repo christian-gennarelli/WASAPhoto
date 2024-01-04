@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -10,21 +11,20 @@ import (
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
 	"github.com/julienschmidt/httprouter"
+	"github.com/mattn/go-sqlite3"
 )
 
 func (rt _router) getBanUserList(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
 	// Retrieve the username of the authenticated user
-	username := helperAuth(w, r, ps, ctx, rt)
-	if username == nil {
+	authUsername := helperAuth(w, r, ps, ctx, rt)
+	if authUsername == nil {
 		return
 	}
 
 	// Retrieve the username from the path and check if it's valid
-	// Retrieve the username from the path and check if it's valid
 	bannerUsername := components.Username{Value: ps.ByName("username")}
-	err := bannerUsername.CheckIfValid()
-	if err != nil {
+	if err := bannerUsername.CheckIfValid(); err != nil {
 		var mess []byte
 		if err == components.ErrUsernameNotValid {
 			w.WriteHeader(http.StatusBadRequest)
@@ -42,7 +42,7 @@ func (rt _router) getBanUserList(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// Check if the username in the path is the same as the authenticated one
-	if bannerUsername.Value != username.Value {
+	if bannerUsername.Value != authUsername.Value {
 		w.WriteHeader(http.StatusUnauthorized)
 		ctx.Logger.Error("cannot unban an user on behalf of another user")
 		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot unban an user on behalf of another user").Error())); err != nil {
@@ -98,17 +98,16 @@ func (rt _router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.
 	w.Header().Set("Content-Type", "application/json")
 
 	// Retrieve the username from the path and check if it's valid
-	username := helperAuth(w, r, ps, ctx, rt)
-	if username == nil {
+	authUsername := helperAuth(w, r, ps, ctx, rt)
+	if authUsername == nil {
 		return
 	}
 
 	// Retrieve the username from the path and check if it's valid
 	bannerUsername := components.Username{Value: ps.ByName("username")}
-	err := bannerUsername.CheckIfValid()
-	if err != nil {
+	if err := bannerUsername.CheckIfValid(); err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.WithError(err).Error("provided username not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
@@ -124,7 +123,7 @@ func (rt _router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	// Check if the username in the path is the same as the authenticated one
-	if bannerUsername.Value != username.Value {
+	if bannerUsername.Value != authUsername.Value {
 		w.WriteHeader(http.StatusUnauthorized)
 		ctx.Logger.Error("cannot unban an user on behalf of another user")
 		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot unban an user on behalf of another user").Error())); err != nil {
@@ -137,7 +136,7 @@ func (rt _router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.
 	bannedUsername := components.Username{Value: r.URL.Query().Get("banned_username")}
 	if err := bannedUsername.CheckIfValid(); err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.Error("provided username not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
@@ -155,7 +154,7 @@ func (rt _router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.
 	// Ban the user
 	if err := rt.db.BanUser(bannerUsername.Value, bannedUsername.Value); err != nil {
 		var mess []byte
-		if err == components.ErrForeignKeyConstraint {
+		if err == sqlite3.ErrConstraintForeignKey {
 			w.WriteHeader(http.StatusNotFound)
 			ctx.Logger.WithError(err).Error("provided username not found")
 			mess = []byte(fmt.Errorf(components.StatusNotFound, "provided username not found").Error())
@@ -177,8 +176,8 @@ func (rt _router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.
 func (rt _router) unbanUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
 	// Authenticate the user
-	username := helperAuth(w, r, ps, ctx, rt)
-	if username == nil {
+	authUsername := helperAuth(w, r, ps, ctx, rt)
+	if authUsername == nil {
 		return
 	}
 
@@ -187,7 +186,7 @@ func (rt _router) unbanUser(w http.ResponseWriter, r *http.Request, ps httproute
 	err := bannerUsername.CheckIfValid()
 	if err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.WithError(err).Error("provided username not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
@@ -203,7 +202,7 @@ func (rt _router) unbanUser(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 
 	// Check if the username in the path is the same as the authenticated one
-	if bannerUsername.Value != username.Value {
+	if bannerUsername.Value != authUsername.Value {
 		w.WriteHeader(http.StatusUnauthorized)
 		ctx.Logger.Error("cannot unban an user on behalf of another user")
 		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot unban an user on behalf of another user").Error())); err != nil {
@@ -216,7 +215,7 @@ func (rt _router) unbanUser(w http.ResponseWriter, r *http.Request, ps httproute
 	bannedUsername := components.Username{Value: ps.ByName("banned_username")}
 	if err := bannedUsername.CheckIfValid(); err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.WithError(err).Error("provided username not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())

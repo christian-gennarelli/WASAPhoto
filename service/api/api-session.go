@@ -24,8 +24,8 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 		return
 	}
 
-	var Username components.Username
-	err := json.NewDecoder(r.Body).Decode(&Username)
+	var username components.Username
+	err := json.NewDecoder(r.Body).Decode(&username)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while decoding the body of the request")
@@ -36,7 +36,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	// Check if the provided username is valid
-	err = Username.CheckIfValid()
+	err = username.CheckIfValid()
 	if err != nil {
 		var mess []byte
 		if err == components.ErrUsernameNotValid {
@@ -55,7 +55,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	// Get the ID from the database
-	ID, err := rt.db.PostUserID(Username.Value)
+	ID, err := rt.db.PostUserID(username.Value)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while parsing the id for the given user")

@@ -15,14 +15,14 @@ func (db appdbimpl) BanUser(bannerUsername string, bannedUsername string) error 
 
 	stmt, err := db.c.Prepare("INSERT INTO Ban (Banner, Banned, CreationDatetime) VALUES (?, ?, ?)")
 	if err != nil {
-		return err //fmt.Errorf("error while preparing the statement to ban the user")
+		return err
 	}
 	defer stmt.Close()
 
 	t := time.Now()
 	startDatetime := strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
 	if _, err = stmt.Exec(bannerUsername, bannedUsername, startDatetime); err != nil {
-		return err //fmt.Errorf("errof while executing the statement to ban the user")
+		return err
 	}
 
 	if err = db.UnfollowUser(bannerUsername, bannedUsername); err != nil {
@@ -36,12 +36,12 @@ func (db appdbimpl) UnbanUser(bannerUsername string, bannedUsername string) erro
 
 	stmt, err := db.c.Prepare("DELETE FROM Ban WHERE Banner = ? AND Banned = ?")
 	if err != nil {
-		return err //fmt.Errorf("error while preparing the statement to ban the user")
+		return err
 	}
 	defer stmt.Close()
 
 	if _, err = stmt.Exec(bannerUsername, bannedUsername); err != nil {
-		return err //fmt.Errorf("errof while executing the statement to ban the user")
+		return err
 	}
 
 	return nil
@@ -68,10 +68,20 @@ func (db appdbimpl) GetBanUserList(bannerUsername string, startDatetime string) 
 			return nil, err
 		}
 
-		// // Open image and turn it into base64
-		img, _ := os.Open(bannedUser.ProfilePic)
+		// Open the image
+		img, err := os.Open(bannedUser.ProfilePic)
+		if err != nil {
+			return nil, err
+		}
 		reader := bufio.NewReader(img)
-		content, _ := io.ReadAll(reader)
+
+		// Read it
+		content, err := io.ReadAll(reader)
+		if err != nil {
+			return nil, err
+		}
+
+		// Turn it into base64
 		bannedUser.ProfilePic = base64.StdEncoding.EncodeToString(content)
 
 		bannedUserList.Users = append(bannedUserList.Users, bannedUser)
