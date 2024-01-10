@@ -26,7 +26,7 @@ func (rt _router) getBanUserList(w http.ResponseWriter, r *http.Request, ps http
 	bannerUsername := components.Username{Value: ps.ByName("username")}
 	if err := bannerUsername.CheckIfValid(); err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.WithError(err).Error("provided username not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
@@ -154,7 +154,7 @@ func (rt _router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.
 	// Ban the user
 	if err := rt.db.BanUser(bannerUsername.Value, bannedUsername.Value); err != nil {
 		var mess []byte
-		if err == sqlite3.ErrConstraintForeignKey {
+		if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
 			w.WriteHeader(http.StatusNotFound)
 			ctx.Logger.WithError(err).Error("provided username not found")
 			mess = []byte(fmt.Errorf(components.StatusNotFound, "provided username not found").Error())

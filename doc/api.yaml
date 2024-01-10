@@ -100,8 +100,7 @@ components:
             At most 16 posts are returned at each request, according to some backend principle (example: datetime)
           items:
             $ref: '#/components/schemas/PostsStream'
-          minItems: 0
-          maxItems: 16
+
 
     Post:
       title: Post

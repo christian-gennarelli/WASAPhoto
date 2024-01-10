@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"strconv"
 	"time"
 
@@ -118,6 +119,10 @@ func (db appdbimpl) GetUserStream(startDatetime string, username string) (*compo
 		postStream.Posts = append(postStream.Posts, post)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return &postStream, nil
 
 }
@@ -126,7 +131,7 @@ func (db appdbimpl) UploadPost(username string, description string) (*components
 
 	var id int
 	if err := db.c.QueryRow("SELECT PostID FROM Post ORDER BY PostID DESC LIMIT 1").Scan(&id); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			id = 0
 		} else {
 			return nil, err
@@ -200,6 +205,10 @@ func (db appdbimpl) GetPostComments(postID string, startDatetime string) (*compo
 		commentList.Comments = append(commentList.Comments, comment)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return &commentList, nil
 
 }
@@ -225,6 +234,10 @@ func (db appdbimpl) GetPostLikes(postID string, startDatetime string) (*componen
 			return nil, err
 		}
 		userList.Users = append(userList.Users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return &userList, nil

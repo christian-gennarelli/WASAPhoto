@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -39,7 +40,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	err = username.CheckIfValid()
 	if err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.WithError(err).Error("provided username not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())

@@ -52,6 +52,10 @@ func (db appdbimpl) GetFollowersList(followedUsername string, startDatetime stri
 		userList.Users = append(userList.Users, user)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return &userList, nil
 
 }
@@ -65,7 +69,7 @@ func (db appdbimpl) GetFollowingList(followerUsername string, startDatetime stri
 	defer stmt.Close()
 
 	rows, err := stmt.Query(followerUsername, startDatetime)
-	if err != nil && err != sql.ErrNoRows { // We don't care if no user follows the given one, we'll write the StatusNoContent header if it happens to be the case
+	if err != nil && !errors.Is(err, sql.ErrNoRows) { // We don't care if no user follows the given one, we'll write the StatusNoContent header if it happens to be the case
 		return nil, err
 	}
 	defer rows.Close()
@@ -93,6 +97,10 @@ func (db appdbimpl) GetFollowingList(followerUsername string, startDatetime stri
 		user.ProfilePic = base64.StdEncoding.EncodeToString(content)
 
 		userList.Users = append(userList.Users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return &userList, nil

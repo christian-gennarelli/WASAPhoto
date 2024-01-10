@@ -120,7 +120,7 @@ func (rt _router) followUser(w http.ResponseWriter, r *http.Request, ps httprout
 	err := followerUsername.CheckIfValid()
 	if err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.Error("provided username not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
@@ -304,7 +304,7 @@ func (rt _router) getFollowersList(w http.ResponseWriter, r *http.Request, ps ht
 	err := username.CheckIfValid()
 	if err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.Error("provided username not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())

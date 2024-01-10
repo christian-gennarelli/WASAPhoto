@@ -87,6 +87,10 @@ func (db appdbimpl) GetBanUserList(bannerUsername string, startDatetime string) 
 		bannedUserList.Users = append(bannedUserList.Users, bannedUser)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return &bannedUserList, nil
 
 }
@@ -102,6 +106,10 @@ func (db appdbimpl) CheckIfBanned(bannerUsername string, bannedUsername string) 
 
 	row, foo := stmt.QueryRow(bannerUsername, bannedUsername, bannedUsername, bannerUsername), ""
 	if err = row.Scan(&foo); err != nil {
+		return err
+	}
+
+	if err := row.Err(); err != nil {
 		return err
 	}
 

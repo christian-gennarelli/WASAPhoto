@@ -557,7 +557,7 @@ func (rt _router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprou
 	username := components.Username{Value: ps.ByName("username")}
 	if err := username.CheckIfValid(); err != nil {
 		var mess []byte
-		if err == components.ErrUsernameNotValid {
+		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.WithError(err).Error("provided username not valid")
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())

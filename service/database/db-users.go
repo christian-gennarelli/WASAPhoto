@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"database/sql"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -27,7 +28,7 @@ func (db appdbimpl) PostUserID(Username string) (*components.ID, error) {
 	// Bind the parameters and execute the statement
 	err = stmt.QueryRow(Username).Scan(&id)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			ID.Value = uniuri.NewLen(64)
 
 			stmt, err = db.c.Prepare("INSERT INTO User (Username, ID) VALUES (?, ?)")

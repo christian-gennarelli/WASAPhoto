@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"database/sql"
 	"encoding/base64"
+	"errors"
 	"io"
 	"os"
 
@@ -46,7 +47,7 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 	}
 
 	rows, err := stmt.Query(Username)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 	defer rows.Close()
@@ -63,6 +64,10 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 	profile := components.Profile{
 		User:  user,
 		Posts: posts,
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return &profile, nil
