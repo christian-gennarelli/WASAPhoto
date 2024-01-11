@@ -31,6 +31,12 @@ func (db appdbimpl) PostUserID(Username string) (*components.ID, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			ID.Value = uniuri.NewLen(64)
 
+			// HOW CAN I STORE A []BYTE IN A SQL RECORD??
+			// uuid = uuid.NewV4()
+			// if err != nil {
+			// 	return nil, err
+			// }
+
 			stmt, err = db.c.Prepare("INSERT INTO User (Username, ID) VALUES (?, ?)")
 			if err != nil {
 				return nil, err

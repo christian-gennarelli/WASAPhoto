@@ -86,6 +86,7 @@ components:
       minLength: 45 # http://WASAPhotoserver.com/photos/posts/1.png
       maxLength: 60 # http://WASAPhotoserver.com/photos/profile_pics/999999999.png
       example: "http://WASAPhotoserver.com/photos/profile_pics/default.png"
+    
     Profile:
       title: Profile
       description: |-

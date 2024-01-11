@@ -34,7 +34,7 @@ func (rt _router) getPhotoFromURL(w http.ResponseWriter, r *http.Request, ps htt
 	}
 
 	// Check if the path is valid
-	if !regex.Match([]byte(path)) {
+	if !regex.MatchString(path) {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.Error("provided path not valid")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided path not valid").Error())); err != nil {

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	_ "image/png"
+	_ "image/png" // Blank import for accepting png images with the image package
 	"io"
 	"net/http"
 	"os"

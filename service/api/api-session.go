@@ -79,7 +79,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	// Send the response to the client
 	w.WriteHeader(http.StatusCreated)
 
-	if _, err = w.Write([]byte(response)); err != nil {
+	if _, err = w.Write(response); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while writing the response body in the response body")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while writing the response body in the response body" /*err*/).Error())); err != nil {

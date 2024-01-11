@@ -56,7 +56,7 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 
 }
 
-func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router, retrieve_post bool) (*components.Username, *components.ID) {
+func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router, retrievePost bool) (*components.Username, *components.ID) {
 
 	// Retrieve the username from the path and check if it is valid
 	ownerUsername := components.Username{Value: ps.ByName("username")}
@@ -77,7 +77,7 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 		return nil, nil
 	}
 
-	if !retrieve_post {
+	if !retrievePost {
 		return &ownerUsername, nil
 	}
 

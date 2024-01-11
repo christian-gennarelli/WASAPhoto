@@ -150,8 +150,8 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	// Retrieve the new username and check if it's valid
-	new_username := components.Username{Value: r.URL.Query().Get("new-username")}
-	err = new_username.CheckIfValid()
+	usernameNew := components.Username{Value: r.URL.Query().Get("new-username")}
+	err = usernameNew.CheckIfValid()
 	if err != nil {
 		var mess []byte
 		if errors.Is(err, components.ErrUsernameNotValid) {
@@ -170,7 +170,7 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	// Update the username
-	err = rt.db.UpdateUsername(new_username.Value, username.Value)
+	err = rt.db.UpdateUsername(usernameNew.Value, username.Value)
 	if err != nil {
 		var mess []byte
 		if errors.Is(err, sql.ErrNoRows) { // Old username not found
@@ -186,14 +186,14 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 			ctx.Logger.WithError(err).Error("error while updating the username")
 			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while updating the username").Error())
 		}
-		if _, err = w.Write([]byte(mess)); err != nil {
+		if _, err = w.Write(mess); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
 
 	// Send the new username to the client as confirmation of the its new username
-	response, err := json.MarshalIndent(new_username, "", " ")
+	response, err := json.MarshalIndent(usernameNew, "", " ")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while enconding the response as JSON")
