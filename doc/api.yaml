@@ -201,6 +201,22 @@ components:
           minLength: 1
           maxLength: 128
           pattern: ''
+    
+tags:
+  - name: USER
+    description: User operations.
+  - name: LOGIN
+    description: Login operation.
+  - name: POST
+    description: Posts operations.
+  - name: PHOTO
+    description: Photo operations.
+  - name: FOLLOW
+    description: (Un)follow operations.
+  - name: STREAM
+    description: Stream operations.
+  - name: BAN
+    description: Ban operations.
 
 paths:
   /session:
