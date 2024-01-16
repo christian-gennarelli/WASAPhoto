@@ -103,7 +103,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 		}
 	}
 
-	_, err = db.Exec(`PRAGMA foreign_keys = on;
+	_, err = db.Exec(`
 	CREATE TABLE IF NOT EXISTS User (
 		ID STRING UNIQUE NOT NULL,
 		Username STRING PRIMARY KEY NOT NULL,
