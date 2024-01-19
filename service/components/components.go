@@ -6,17 +6,9 @@ import (
 	"regexp"
 )
 
-type ID struct {
-	Value string
-}
-
-type Username struct {
-	Value string `json:"name"`
-}
-
 type User struct {
-	ID         ID
-	Username   Username
+	ID         string
+	Username   string
 	Birthdate  string
 	Name       string
 	ProfilePic string // Base64 encoded image
@@ -32,8 +24,8 @@ type UserList struct {
 }
 
 type Post struct {
-	PostID           ID
-	Author           Username
+	PostID           string
+	Author           string
 	Photo            string // URL path to the image, stored server-side
 	CreationDatetime string
 	Description      string
@@ -44,11 +36,11 @@ type Stream struct {
 }
 
 type Comment struct {
-	CommentID        ID
-	PostID           ID
+	CommentID        string
+	PostID           string
 	Body             string
 	CreationDatetime string
-	Author           Username
+	Author           string
 }
 
 type CommentList struct {
@@ -61,46 +53,35 @@ type Error struct {
 }
 
 // Check if the provided username is in the correct format
-func (Username Username) CheckIfValid() error {
+func CheckIfValid(content string, contentType string) error {
 
-	regex, err := regexp.Compile(USERNAME_REGEXP)
+	var REGEXP string
+	var regexpErr error
+	if contentType == "ID" {
+		REGEXP = ID_REGEXP
+		regexpErr = ErrIDNotValid
+	} else if contentType == "Username" {
+		REGEXP = USERNAME_REGEXP
+		regexpErr = ErrUsernameNotValid
+	} else if contentType == "Comment" {
+		REGEXP = COMMENT_REGEXP
+		regexpErr = ErrCommentNotValid
+	} else if contentType == "Datetime" {
+		REGEXP = DATETIME_REGEXP
+		regexpErr = ErrDatetimeNotValid
+	} else {
+		REGEXP = DATE_REGEXP
+		regexpErr = ErrDateNotValid
+	}
+
+	regex, err := regexp.Compile(REGEXP)
 	if err != nil {
 		return err
 	}
 
-	if !regex.MatchString(Username.Value) {
-		return ErrUsernameNotValid
+	if !regex.MatchString(content) {
+		return regexpErr
 	}
 
 	return nil
-}
-
-func (Id ID) CheckIfValid() error {
-
-	regex, err := regexp.Compile(ID_REGEXP)
-	if err != nil {
-		return err
-	}
-
-	if !regex.MatchString(Id.Value) {
-		return ErrIDNotValid
-	}
-
-	return nil
-
-}
-
-func (comment Comment) CheckIfValid() error {
-
-	regex, err := regexp.Compile(COMMENT_REGEXP)
-	if err != nil {
-		return err
-	}
-
-	if !regex.MatchString(comment.Body) {
-		return ErrCommentNotValid
-	}
-
-	return nil
-
 }

@@ -36,15 +36,15 @@ func (rt _router) likePhoto(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 
 	// Check if the authenticated user has banned the owner of the post or viceversa
-	err := rt.db.CheckIfBanned(authUsername.Value, ownerUsername.Value)
+	err := rt.db.CheckIfBanned(*authUsername, *ownerUsername)
 	if err == nil {
 		w.WriteHeader(http.StatusForbidden)
 		ctx.Logger.Error("cannot like a photo of a banned user or that has banned the authenticated user")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusForbidden, "cannot like a photo of an user or that has banned the authenticated user").Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusForbidden, "cannot like a photo of a banned user or that has banned the authenticated user").Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
-	} else if errors.Is(err, sql.ErrNoRows) {
+	} else if !errors.Is(err, sql.ErrNoRows) {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the authenticated user banned the other user or viceversa")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "error while checking if the authenticated user banned the other user or viceversa").Error())); err != nil {
@@ -54,7 +54,7 @@ func (rt _router) likePhoto(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 
 	// Add the username of the authenticated user to the list of likes of the post
-	err = rt.db.AddLikeToPost(ownerUsername.Value, postID.Value)
+	err = rt.db.AddLikeToPost(*ownerUsername, *postID)
 	if err != nil {
 		var mess []byte
 		if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
@@ -95,8 +95,8 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	// No need of ban checks
 
 	// Retrieve the username from the path and check if it is valid
-	likerUsername := components.Username{Value: ps.ByName("liker_username")}
-	if err := likerUsername.CheckIfValid(); err != nil {
+	likerUsername := ps.ByName("liker_username")
+	if err := components.CheckIfValid(likerUsername, "Username"); err != nil {
 		var mess []byte
 		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
@@ -114,7 +114,7 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Check if the authenticated user is the same as the liker username provided in the path
-	if likerUsername.Value != authUsername.Value {
+	if likerUsername != *authUsername {
 		w.WriteHeader(http.StatusForbidden)
 		ctx.Logger.Error("authenticated user cannot like another photo on behalf of another user")
 		if _, err := w.Write([]byte(fmt.Errorf(components.StatusForbidden, "authenticated user cannot like another photo on behalf of another user").Error())); err != nil {
@@ -124,7 +124,7 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Remove the like from the post
-	if err := rt.db.RemoveLikeFromPost(likerUsername.Value, postID.Value); err != nil {
+	if err := rt.db.RemoveLikeFromPost(likerUsername, *postID); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.WithError(err).Error("error encountered while removing the like to the post")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "error encountered while removing the like to the post").Error())); err != nil {
@@ -138,7 +138,7 @@ func (rt _router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 
 func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "text/plain")
 
 	// Retrieve the username of the authenticated user
 	authUsername := helperAuth(w, r, ps, ctx, rt)
@@ -153,7 +153,7 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	// Check if the authenticated user banned the owner of the post or viceversa
-	err := rt.db.CheckIfBanned(authUsername.Value, ownerUsername.Value)
+	err := rt.db.CheckIfBanned(*authUsername, *ownerUsername)
 	if err == nil {
 		w.WriteHeader(http.StatusForbidden)
 		ctx.Logger.Error("cannot comment a photo of a banned user or that has banned the authenticated user")
@@ -161,7 +161,7 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
-	} else if errors.Is(err, sql.ErrNoRows) {
+	} else if !errors.Is(err, sql.ErrNoRows) {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the authenticated user banned the other user or viceversa")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "error while checking if the authenticated user banned the other user or viceversa").Error())); err != nil {
@@ -171,7 +171,6 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	// Retrieve the comment from the request body
-	var comment components.Comment
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -181,9 +180,9 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		}
 		return
 	}
-	comment.Body = string(body)
+	comment := string(body)
 
-	if err := comment.CheckIfValid(); err != nil {
+	if err := components.CheckIfValid(comment, "Comment"); err != nil {
 		var mess []byte
 		if errors.Is(err, components.ErrCommentNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
@@ -201,7 +200,7 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	// Add the comment to the post
-	err = rt.db.AddCommentToPost(postID.Value, comment.Body, authUsername.Value)
+	err = rt.db.AddCommentToPost(*postID, comment, *authUsername)
 	if err != nil {
 		var mess []byte
 		if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
@@ -240,26 +239,26 @@ func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// Retrieve the id of the comment from the path and check if it is valid
-	commentID := components.ID{Value: ps.ByName("comment_id")}
-	if err := commentID.CheckIfValid(); err != nil {
-		var mess []byte
-		if errors.Is(err, components.ErrIDNotValid) {
-			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.Error("provided comment ID not valid")
-			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided comment ID not valid").Error())
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			ctx.Logger.WithError(err).Error("error while checking if the comment ID is valid")
-			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the comment ID is valid").Error())
-		}
-		if _, err = w.Write(mess); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return
-	}
+	commentID := ps.ByName("comment_id")
+	// if err := components.CheckIfValid(commentID, "ID"); err != nil {
+	// 	var mess []byte
+	// 	if errors.Is(err, components.ErrIDNotValid) {
+	// 		w.WriteHeader(http.StatusBadRequest)
+	// 		ctx.Logger.Error("provided comment ID not valid")
+	// 		mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided comment ID not valid").Error())
+	// 	} else {
+	// 		w.WriteHeader(http.StatusInternalServerError)
+	// 		ctx.Logger.WithError(err).Error("error while checking if the comment ID is valid")
+	// 		mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the comment ID is valid").Error())
+	// 	}
+	// 	if _, err = w.Write(mess); err != nil {
+	// 		ctx.Logger.WithError(err).Error("error while writing the response")
+	// 	}
+	// 	return
+	// }
 
 	// Retrieve the owner of the comment, and check if the authenticated user is the owner of the comment
-	ownerUsernameComment, err := rt.db.GetOwnerUsernameOfComment(commentID.Value)
+	ownerUsernameComment, err := rt.db.GetOwnerUsernameOfComment(commentID)
 	if err != nil {
 		var mess []byte
 		if errors.Is(err, sql.ErrNoRows) {
@@ -278,7 +277,7 @@ func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// Check if authenticated user is the real owner of the comment
-	if ownerUsernameComment.Value != authUsername.Value {
+	if *ownerUsernameComment != *authUsername {
 		w.WriteHeader(http.StatusForbidden)
 		ctx.Logger.WithError(err).Error("authenticated user cannot uncomment a photo on behalf of another user")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusForbidden, "authenticated user cannot uncomment a photo on behalf of another user").Error())); err != nil {
@@ -288,7 +287,7 @@ func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// Delete the comment under the given post
-	err = rt.db.RemoveCommentFromPost(postID.Value, commentID.Value)
+	err = rt.db.RemoveCommentFromPost(*postID, commentID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while removing the comment from the post")
@@ -316,7 +315,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Check if the username in the path and the authenticated one are the same
-	if usernameOwner.Value != usernameAuth.Value {
+	if *usernameOwner != *usernameAuth {
 		w.WriteHeader(http.StatusForbidden)
 		ctx.Logger.Error("authenticated user cannot post a post on the profile of another user")
 		if _, err := w.Write([]byte(fmt.Errorf(components.StatusForbidden, "authenticated user cannot post a post on the profile of another user").Error())); err != nil {
@@ -429,7 +428,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 	description := rawDescription[0]
 
-	if err := (components.Comment{Body: description}).CheckIfValid(); err != nil {
+	if err := components.CheckIfValid(description, "Comment"); err != nil {
 		var mess []byte
 		if errors.Is(err, components.ErrCommentNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
@@ -446,7 +445,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
-	post, err := rt.db.UploadPost(usernameOwner.Value, description)
+	post, err := rt.db.UploadPost(*usernameOwner, description)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while posting the photo")
@@ -474,7 +473,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while creating the photo locally").Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
-		if _, err := rt.db.DeletePost(post.PostID.Value); err != nil {
+		if _, err := rt.db.DeletePost(post.PostID); err != nil {
 			ctx.Logger.WithError(err).Error("error while deleting the record just uploaded")
 		}
 		return
@@ -489,7 +488,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while copying creating the photo locally").Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
-		if _, err := rt.db.DeletePost(post.PostID.Value); err != nil {
+		if _, err := rt.db.DeletePost(post.PostID); err != nil {
 			ctx.Logger.WithError(err).Error("error while deleting the record just uploaded")
 		}
 		return
@@ -511,7 +510,7 @@ func (rt _router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Check if the username in the path and the authenticated one are the same
-	if ownerUsername.Value != usernameAuth.Value {
+	if *ownerUsername != *usernameAuth {
 		w.WriteHeader(http.StatusForbidden)
 		ctx.Logger.Error("authenticated user cannot delete a post on the profile of another user")
 		if _, err := w.Write([]byte(fmt.Errorf(components.StatusForbidden, "authenticated user cannot post a post on the profile of another user").Error())); err != nil {
@@ -521,7 +520,7 @@ func (rt _router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Delete the record representing the post from the database
-	photoPath, err := rt.db.DeletePost(postID.Value)
+	photoPath, err := rt.db.DeletePost(*postID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while deleting the post from the database")
@@ -554,8 +553,8 @@ func (rt _router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Retrieve the username from the path and check if it's valid
-	username := components.Username{Value: ps.ByName("username")}
-	if err := username.CheckIfValid(); err != nil {
+	username := ps.ByName("username")
+	if err := components.CheckIfValid(username, "Username"); err != nil {
 		var mess []byte
 		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
@@ -573,7 +572,7 @@ func (rt _router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Check that the username from the path and the authenticated username is the same
-	if usernameAuth.Value != username.Value {
+	if *usernameAuth != username {
 		w.WriteHeader(http.StatusForbidden)
 		ctx.Logger.Error("authenticated user cannot see the stream of another user")
 		if _, err := w.Write([]byte(fmt.Errorf(components.StatusForbidden, "authenticated user cannot see the stream of another user").Error())); err != nil {
@@ -587,10 +586,19 @@ func (rt _router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprou
 	if len(startDatetime) == 0 {
 		t := time.Now()
 		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
+	} else {
+		if err := components.CheckIfValid(startDatetime, "Datetime"); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.Error("provided datetime not valid")
+			if _, err := w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided datetime not valid").Error())); err != nil {
+				ctx.Logger.WithError(err).Error("error while writing the response")
+			}
+			return
+		}
 	}
 
 	// Retrieve the stream of the user
-	postStream, err := rt.db.GetUserStream(startDatetime, username.Value)
+	postStream, err := rt.db.GetUserStream(startDatetime, username)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while retrieving the stream for the given user")
@@ -643,7 +651,7 @@ func (rt _router) getPostComments(w http.ResponseWriter, r *http.Request, ps htt
 	}
 
 	// Check if one of the users banned the other one
-	err := rt.db.CheckIfBanned(authUsername.Value, usernameOwner.Value)
+	err := rt.db.CheckIfBanned(*authUsername, *usernameOwner)
 	if err == nil {
 		w.WriteHeader(http.StatusForbidden)
 		ctx.Logger.Error("cannot get the comments of a post of a banned user or that has banned the authenticated user")
@@ -651,7 +659,7 @@ func (rt _router) getPostComments(w http.ResponseWriter, r *http.Request, ps htt
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
-	} else if errors.Is(err, sql.ErrNoRows) {
+	} else if !errors.Is(err, sql.ErrNoRows) {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the authenticated user banned the other user or viceversa")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the authenticated user banned the other user or viceversa").Error())); err != nil {
@@ -664,10 +672,19 @@ func (rt _router) getPostComments(w http.ResponseWriter, r *http.Request, ps htt
 	if len(startDatetime) == 0 {
 		t := time.Now()
 		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
+	} else {
+		if err := components.CheckIfValid(startDatetime, "Datetime"); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.Error("provided datetime not valid")
+			if _, err := w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided datetime not valid").Error())); err != nil {
+				ctx.Logger.WithError(err).Error("error while writing the response")
+			}
+			return
+		}
 	}
 
 	// Retrieve the list of comments of the given post
-	commentList, err := rt.db.GetPostComments(postID.Value, startDatetime)
+	commentList, err := rt.db.GetPostComments(*postID, startDatetime)
 	if err != nil {
 		var mess []byte
 		if errors.Is(err, sql.ErrNoRows) {
@@ -724,7 +741,7 @@ func (rt _router) getPostLikes(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	// Check if one of the users banned the other one
-	err := rt.db.CheckIfBanned(usernameAuth.Value, usernameOwner.Value)
+	err := rt.db.CheckIfBanned(*usernameAuth, *usernameOwner)
 	if err == nil {
 		w.WriteHeader(http.StatusForbidden)
 		ctx.Logger.Error("cannot get the comments of a post of a banned user or that has banned the authenticated user")
@@ -732,7 +749,7 @@ func (rt _router) getPostLikes(w http.ResponseWriter, r *http.Request, ps httpro
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
-	} else if errors.Is(err, sql.ErrNoRows) {
+	} else if !errors.Is(err, sql.ErrNoRows) {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while checking if the authenticated user banned the other user or viceversa")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the authenticated user banned the other user or viceversa").Error())); err != nil {
@@ -745,10 +762,19 @@ func (rt _router) getPostLikes(w http.ResponseWriter, r *http.Request, ps httpro
 	if len(startDatetime) == 0 {
 		t := time.Now()
 		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
+	} else {
+		if err := components.CheckIfValid(startDatetime, "Datetime"); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.Error("provided datetime not valid")
+			if _, err := w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided datetime not valid").Error())); err != nil {
+				ctx.Logger.WithError(err).Error("error while writing the response")
+			}
+			return
+		}
 	}
 
 	// Retrieve the list of likes of the given post
-	userList, err := rt.db.GetPostLikes(postID.Value, startDatetime)
+	userList, err := rt.db.GetPostLikes(*postID, startDatetime)
 	if err != nil {
 		var mess []byte
 		if errors.Is(err, sql.ErrNoRows) {

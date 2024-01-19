@@ -17,9 +17,9 @@ func (db appdbimpl) CheckIfOwnerPost(Username string, PostID string) error {
 	}
 	defer stmt.Close()
 
-	var author components.Username
+	var author string
 	row := stmt.QueryRow(Username, PostID)
-	if err = row.Scan(&author.Value); err != nil {
+	if err = row.Scan(&author); err != nil {
 		return err
 	}
 
@@ -118,7 +118,7 @@ func (db appdbimpl) GetUserStream(startDatetime string, username string) (*compo
 	var postStream components.Stream
 	for rows.Next() {
 		var post components.Post
-		if err := rows.Scan(&post.PostID.Value, &post.Author.Value, &post.CreationDatetime, &post.Description, &post.Photo); err != nil {
+		if err := rows.Scan(&post.PostID, &post.Author, &post.CreationDatetime, &post.Description, &post.Photo); err != nil {
 			return nil, err
 		}
 		postStream.Posts = append(postStream.Posts, post)
@@ -157,8 +157,8 @@ func (db appdbimpl) UploadPost(username string, description string) (*components
 	}
 
 	return &components.Post{
-		PostID:           components.ID{Value: strconv.Itoa(id + 1)},
-		Author:           components.Username{Value: username},
+		PostID:           strconv.Itoa(id + 1),
+		Author:           username,
 		CreationDatetime: creationDatetime,
 		Description:      description,
 		Photo:            photoPath,
@@ -204,7 +204,7 @@ func (db appdbimpl) GetPostComments(postID string, startDatetime string) (*compo
 	var commentList components.CommentList
 	for rows.Next() {
 		var comment components.Comment
-		if err := rows.Scan(&comment.CommentID.Value, &comment.PostID.Value, &comment.Author.Value, &comment.CreationDatetime, &comment.Body); err != nil {
+		if err := rows.Scan(&comment.CommentID, &comment.PostID, &comment.Author, &comment.CreationDatetime, &comment.Body); err != nil {
 			return nil, err
 		}
 		commentList.Comments = append(commentList.Comments, comment)
@@ -235,7 +235,7 @@ func (db appdbimpl) GetPostLikes(postID string, startDatetime string) (*componen
 	var userList components.UserList
 	for rows.Next() {
 		var user components.User
-		if err := rows.Scan(&user.Username.Value, &user.ProfilePic, &user.Birthdate, &user.Name); err != nil {
+		if err := rows.Scan(&user.Username, &user.ProfilePic, &user.Birthdate, &user.Name); err != nil {
 			return nil, err
 		}
 		userList.Users = append(userList.Users, user)

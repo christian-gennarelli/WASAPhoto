@@ -47,9 +47,9 @@ type AppDatabase interface {
 	Ping() error
 
 	// User queries
-	GetUsernameByToken(Id string) (*components.Username, error)
-	GetOwnerUsernameOfComment(CommentID string) (*components.Username, error)
-	PostUserID(Username string) (*components.ID, error)
+	GetUsernameByToken(Id string) (*string, error)
+	GetOwnerUsernameOfComment(CommentID string) (*string, error)
+	PostUserID(Username string) (*string, error)
 	SearchUser(Username string) (*components.UserList, error)
 	UpdateUsername(NewUsername string, OldUsername string) error
 

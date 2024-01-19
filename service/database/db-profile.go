@@ -55,7 +55,7 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 	var posts []components.Post
 	for rows.Next() {
 		var post components.Post
-		if err = rows.Scan(&post.PostID.Value, &post.Author.Value, &post.Description, &post.CreationDatetime, &post.Photo); err != nil {
+		if err = rows.Scan(&post.PostID, &post.Author, &post.Description, &post.CreationDatetime, &post.Photo); err != nil {
 			return nil, err
 		}
 		posts = append(posts, post)

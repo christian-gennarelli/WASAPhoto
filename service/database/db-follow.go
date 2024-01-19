@@ -30,7 +30,7 @@ func (db appdbimpl) GetFollowersList(followedUsername string, startDatetime stri
 	var userList components.UserList
 	for rows.Next() {
 		var user components.User
-		err = rows.Scan(&user.Username.Value, &user.Birthdate, &user.ProfilePic, &user.Name)
+		err = rows.Scan(&user.Username, &user.Birthdate, &user.ProfilePic, &user.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +77,7 @@ func (db appdbimpl) GetFollowingList(followerUsername string, startDatetime stri
 	var userList components.UserList
 	for rows.Next() {
 		var user components.User
-		err = rows.Scan(&user.Username.Value, &user.Birthdate, &user.ProfilePic, &user.Name)
+		err = rows.Scan(&user.Username, &user.Birthdate, &user.ProfilePic, &user.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -118,10 +118,6 @@ func (db appdbimpl) FollowUser(followerUsername string, followedUsername string)
 	t := time.Now()
 	startDatetime := strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
 	if _, err = stmt.Exec(followerUsername, followedUsername, startDatetime); err != nil {
-		return err
-	}
-
-	if _, err = stmt.Exec(followerUsername, followedUsername); err != nil {
 		return err
 	}
 

@@ -231,7 +231,7 @@ paths:
       requestBody:
         description: User details (here, just the username)
         content:
-          application/json:
+          text/plain:
             schema:
               $ref: '#/components/schemas/Username'
         required: true
@@ -239,7 +239,7 @@ paths:
         '201':
           description: User log-in action successful
           content:
-            application/json:
+            text/plain:
               schema:
                 $ref: '#/components/schemas/ID'
         '400': # Not acceptable
@@ -441,14 +441,14 @@ paths:
         - BearerAuth: []
       requestBody:
         content:
-          application/json:
+          text/plain:
             schema:
               $ref: '#/components/schemas/Username'
       responses: 
         '201': # OK - Username updated
           description: New username of this user.
           content:
-            application/json:
+            text/plain:
               schema:
                 $ref: '#/components/schemas/Username'
         '400': # Bad request

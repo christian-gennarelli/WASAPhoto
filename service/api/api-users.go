@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -16,28 +15,28 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	w.Header().Set("Content-Type", "application/json")
 
 	// Parse the string we want to match in usernames
-	searchedUsername := components.Username{Value: r.URL.Query().Get("searched_username")}
+	searchedUsername := r.URL.Query().Get("searched_username")
 
 	// Check if the provided username is valid
-	if err := searchedUsername.CheckIfValid(); err != nil {
-		var mess []byte
-		if errors.Is(err, components.ErrUsernameNotValid) {
-			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.WithError(err).Error("provided username not valid")
-			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())
-		}
-		if _, err = w.Write(mess); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return
-	}
+	// if err := components.CheckIfValid(searchedUsername, "Username"); err != nil {
+	// 	var mess []byte
+	// 	if errors.Is(err, components.ErrUsernameNotValid) {
+	// 		w.WriteHeader(http.StatusBadRequest)
+	// 		ctx.Logger.WithError(err).Error("provided username not valid")
+	// 		mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
+	// 	} else {
+	// 		w.WriteHeader(http.StatusInternalServerError)
+	// 		ctx.Logger.WithError(err).Error("error while checking if the username is valid")
+	// 		mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid" /*err*/).Error())
+	// 	}
+	// 	if _, err = w.Write(mess); err != nil {
+	// 		ctx.Logger.WithError(err).Error("error while writing the response")
+	// 	}
+	// 	return
+	// }
 
 	// Search the users
-	userList, err := rt.db.SearchUser(searchedUsername.Value)
+	userList, err := rt.db.SearchUser(searchedUsername)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while searching the users with the provided username as substring")
