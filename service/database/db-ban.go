@@ -105,11 +105,12 @@ func (db appdbimpl) CheckIfBanned(bannerUsername string, bannedUsername string) 
 	defer stmt.Close()
 
 	row, foo := stmt.QueryRow(bannerUsername, bannedUsername, bannedUsername, bannerUsername), ""
-	if err = row.Scan(&foo); err != nil {
+
+	if err := row.Err(); err != nil {
 		return err
 	}
 
-	if err := row.Err(); err != nil {
+	if err = row.Scan(&foo); err != nil {
 		return err
 	}
 

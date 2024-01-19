@@ -26,8 +26,13 @@ func (db appdbimpl) PostUserID(Username string) (*components.ID, error) {
 	var id string
 	var ID components.ID
 	// Bind the parameters and execute the statement
-	err = stmt.QueryRow(Username).Scan(&id)
-	if err != nil {
+	row := stmt.QueryRow(Username)
+
+	if err = row.Err(); err != nil {
+		return nil, err
+	}
+
+	if err = row.Scan(&id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			ID.Value = uniuri.NewLen(64)
 

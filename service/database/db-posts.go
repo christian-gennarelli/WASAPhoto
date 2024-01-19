@@ -18,7 +18,12 @@ func (db appdbimpl) CheckIfOwnerPost(Username string, PostID string) error {
 	defer stmt.Close()
 
 	var author components.Username
-	if err = stmt.QueryRow(Username, PostID).Scan(&author.Value); err != nil {
+	row := stmt.QueryRow(Username, PostID)
+	if err = row.Scan(&author.Value); err != nil {
+		return err
+	}
+
+	if err = row.Err(); err != nil {
 		return err
 	}
 
