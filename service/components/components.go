@@ -7,11 +7,11 @@ import (
 )
 
 type ID struct {
-	Value string
+	Value string `json:"ID"`
 }
 
 type Username struct {
-	Value string `json:"name"`
+	Value string `json:"Username"`
 }
 
 type User struct {

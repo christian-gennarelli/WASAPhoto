@@ -1,12 +1,8 @@
 package database
 
 import (
-	"bufio"
 	"database/sql"
-	"encoding/base64"
 	"errors"
-	"io"
-	"os"
 	"strconv"
 	"time"
 
@@ -27,36 +23,41 @@ func (db appdbimpl) GetFollowersList(followedUsername string, startDatetime stri
 	}
 	defer rows.Close()
 
-	var userList components.UserList
-	for rows.Next() {
-		var user components.User
-		err = rows.Scan(&user.Username.Value, &user.Birthdate, &user.ProfilePic, &user.Name)
-		if err != nil {
-			return nil, err
-		}
+	// var userList components.UserList
+	// for rows.Next() {
+	// 	var user components.User
+	// 	err = rows.Scan(&user.Username.Value, &user.Birthdate, &user.ProfilePic, &user.Name)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
 
-		// Open the image
-		img, err := os.Open(user.ProfilePic)
-		if err != nil {
-			return nil, err
-		}
-		reader := bufio.NewReader(img)
-		// Read it
-		content, err := io.ReadAll(reader)
-		if err != nil {
-			return nil, err
-		}
-		// Convert it in base64
-		user.ProfilePic = base64.StdEncoding.EncodeToString(content)
+	// 	// Open the image
+	// 	img, err := os.Open(user.ProfilePic)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	reader := bufio.NewReader(img)
+	// 	// Read it
+	// 	content, err := io.ReadAll(reader)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	// Convert it in base64
+	// 	user.ProfilePic = base64.StdEncoding.EncodeToString(content)
 
-		userList.Users = append(userList.Users, user)
+	// 	userList.Users = append(userList.Users, user)
+	// }
+
+	userList, err := retrieveUserList(rows)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return &userList, nil
+	return userList, nil
 
 }
 
@@ -74,36 +75,41 @@ func (db appdbimpl) GetFollowingList(followerUsername string, startDatetime stri
 	}
 	defer rows.Close()
 
-	var userList components.UserList
-	for rows.Next() {
-		var user components.User
-		err = rows.Scan(&user.Username.Value, &user.Birthdate, &user.ProfilePic, &user.Name)
-		if err != nil {
-			return nil, err
-		}
+	// var userList components.UserList
+	// for rows.Next() {
+	// 	var user components.User
+	// 	err = rows.Scan(&user.Username.Value, &user.Birthdate, &user.ProfilePic, &user.Name)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
 
-		// Open the image
-		img, err := os.Open(user.ProfilePic)
-		if err != nil {
-			return nil, err
-		}
-		reader := bufio.NewReader(img)
-		// Read it
-		content, err := io.ReadAll(reader)
-		if err != nil {
-			return nil, err
-		}
-		// Convert it in base64
-		user.ProfilePic = base64.StdEncoding.EncodeToString(content)
+	// 	// Open the image
+	// 	img, err := os.Open(user.ProfilePic)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	reader := bufio.NewReader(img)
+	// 	// Read it
+	// 	content, err := io.ReadAll(reader)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	// Convert it in base64
+	// 	user.ProfilePic = base64.StdEncoding.EncodeToString(content)
 
-		userList.Users = append(userList.Users, user)
+	// 	userList.Users = append(userList.Users, user)
+	// }
+
+	userList, err := retrieveUserList(rows)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return &userList, nil
+	return userList, nil
 
 }
 
@@ -121,10 +127,6 @@ func (db appdbimpl) FollowUser(followerUsername string, followedUsername string)
 		return err
 	}
 
-	if _, err = stmt.Exec(followerUsername, followedUsername); err != nil {
-		return err
-	}
-
 	return nil
 
 }
@@ -135,6 +137,7 @@ func (db appdbimpl) UnfollowUser(followerUsername string, followedUsername strin
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	if _, err = stmt.Exec(followerUsername, followedUsername); err != nil {
 		return err

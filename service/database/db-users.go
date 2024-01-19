@@ -46,6 +46,7 @@ func (db appdbimpl) PostUserID(Username string) (*components.ID, error) {
 			if err != nil {
 				return nil, err
 			}
+			defer stmt.Close()
 
 			if _, err = stmt.Exec(Username, ID.Value); err != nil {
 				return nil, err
@@ -75,6 +76,10 @@ func (db appdbimpl) SearchUser(Username string) (*components.UserList, error) {
 		return nil, fmt.Errorf("error while performing the query to obtain the list of users with the provided string as substring")
 	}
 	defer users.Close()
+
+	if err = users.Err(); err != nil {
+		return nil, err
+	}
 
 	// Instantiate the data structure that will hold the list of usernames
 	var ulist components.UserList
