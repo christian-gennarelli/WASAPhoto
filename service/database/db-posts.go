@@ -101,7 +101,7 @@ func (db appdbimpl) RemoveCommentFromPost(PostID string, CommentID string) error
 
 }
 
-func (db appdbimpl) GetUserStream(startDatetime string, username string) (*components.Stream, error) {
+func (db appdbimpl) GetUserStream(username string) (*components.Stream, error) {
 
 	stmt, err := db.c.Prepare(`SELECT 
 									P.PostID, 
@@ -110,13 +110,13 @@ func (db appdbimpl) GetUserStream(startDatetime string, username string) (*compo
 									P.Description, 
 									P.PhotoPath,
 									(SELECT COUNT(*) FROM Like L WHERE L.PostID = P.PostID) as Likes 
-							FROM Post P JOIN Follow F ON P.Author = F.Followed WHERE F.Follower = ? AND P.CreationDatetime <= ? ORDER BY P.CreationDatetime DESC LIMIT 16`)
+							FROM Post P JOIN Follow F ON P.Author = F.Followed WHERE F.Follower = ? ORDER BY P.CreationDatetime DESC`)
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(username, startDatetime)
+	rows, err := stmt.Query(username)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func (db appdbimpl) GetUserStream(startDatetime string, username string) (*compo
 func (db appdbimpl) UploadPost(username string, description string) (*components.Post, error) {
 
 	var id int
-	if err := db.c.QueryRow("SELECT PostID FROM Post ORDER BY PostID DESC LIMIT 1").Scan(&id); err != nil {
+	if err := db.c.QueryRow("SELECT seq FROM sqlite_sequence WHERE Name='Post';").Scan(&id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			id = 0
 		} else {
@@ -194,15 +194,15 @@ func (db appdbimpl) DeletePost(postID string) (*string, error) {
 
 }
 
-func (db appdbimpl) GetPostComments(postID string, startDatetime string) (*components.CommentList, error) {
+func (db appdbimpl) GetPostComments(postID string) (*components.CommentList, error) {
 
-	stmt, err := db.c.Prepare("SELECT * FROM Comment WHERE PostID = ? AND CreationDatetime <= ? ORDER BY CreationDatetime DESC LIMIT 16")
+	stmt, err := db.c.Prepare("SELECT * FROM Comment WHERE PostID = ? ORDER BY L.CreationDatetime DESC")
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(postID, startDatetime)
+	rows, err := stmt.Query(postID)
 	if err != nil {
 		return nil, err
 	}
@@ -225,15 +225,15 @@ func (db appdbimpl) GetPostComments(postID string, startDatetime string) (*compo
 
 }
 
-func (db appdbimpl) GetPostLikes(postID string, startDatetime string) (*components.UserList, error) {
+func (db appdbimpl) GetPostLikes(postID string) (*components.UserList, error) {
 
-	stmt, err := db.c.Prepare("SELECT U.Username, U.ProfilePicPath, COALESCE('', U.Birthdate), COALESCE('', U.Name) FROM User U JOIN Like L ON L.Liker = U.Username WHERE L.PostID = ? AND L.CreationDatetime <= ? ORDER BY CreationDatetime DESC LIMIT 16")
+	stmt, err := db.c.Prepare("SELECT U.Username, U.ProfilePicPath, COALESCE('', U.Birthdate), COALESCE('', U.Name) FROM User U JOIN Like L ON L.Liker = U.Username WHERE L.PostID = ? ORDER BY L.CreationDatetime DESC")
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(postID, startDatetime)
+	rows, err := stmt.Query(postID)
 	if err != nil {
 		return nil, err
 	}

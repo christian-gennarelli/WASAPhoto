@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
@@ -517,7 +516,7 @@ func (rt _router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Delete the file
-	if err := os.Remove(*photoPath); err != nil {
+	if err := os.Remove("photos/" + *photoPath); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while deleting the photo frrom the server")
 		if _, err := w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while deleting the photo frrom the server").Error())); err != nil {
@@ -567,24 +566,8 @@ func (rt _router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
-	// Retrieve the starting datetime (the last 16 posts between the provided datetime and the current one will be returned)
-	startDatetime := r.URL.Query().Get("datetime")
-	if len(startDatetime) == 0 {
-		t := time.Now()
-		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
-	} else {
-		if err := components.CheckIfValid(startDatetime, "Datetime"); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.Error("provided datetime not valid")
-			if _, err := w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided datetime not valid").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("error while writing the response")
-			}
-			return
-		}
-	}
-
 	// Retrieve the stream of the user
-	postStream, err := rt.db.GetUserStream(startDatetime, username)
+	postStream, err := rt.db.GetUserStream(username)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while retrieving the stream for the given user")
@@ -654,23 +637,8 @@ func (rt _router) getPostComments(w http.ResponseWriter, r *http.Request, ps htt
 		return
 	}
 
-	startDatetime := r.URL.Query().Get("datetime")
-	if len(startDatetime) == 0 {
-		t := time.Now()
-		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
-	} else {
-		if err := components.CheckIfValid(startDatetime, "Datetime"); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.Error("provided datetime not valid")
-			if _, err := w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided datetime not valid").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("error while writing the response")
-			}
-			return
-		}
-	}
-
 	// Retrieve the list of comments of the given post
-	commentList, err := rt.db.GetPostComments(*postID, startDatetime)
+	commentList, err := rt.db.GetPostComments(*postID)
 	if err != nil {
 		var mess []byte
 		if errors.Is(err, sql.ErrNoRows) {
@@ -744,23 +712,8 @@ func (rt _router) getPostLikes(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
-	startDatetime := r.URL.Query().Get("datetime")
-	if len(startDatetime) == 0 {
-		t := time.Now()
-		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
-	} else {
-		if err := components.CheckIfValid(startDatetime, "Datetime"); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.Error("provided datetime not valid")
-			if _, err := w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided datetime not valid").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("error while writing the response")
-			}
-			return
-		}
-	}
-
 	// Retrieve the list of likes of the given post
-	userList, err := rt.db.GetPostLikes(*postID, startDatetime)
+	userList, err := rt.db.GetPostLikes(*postID)
 	if err != nil {
 		var mess []byte
 		if errors.Is(err, sql.ErrNoRows) {

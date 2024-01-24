@@ -9,15 +9,15 @@ import (
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
 )
 
-func (db appdbimpl) GetFollowersList(followedUsername string, startDatetime string) (*components.UserList, error) {
+func (db appdbimpl) GetFollowersList(followedUsername string) (*components.UserList, error) {
 
-	stmt, err := db.c.Prepare("SELECT U.Username, COALESCE('', U.Birthdate), U.ProfilePicPath,  COALESCE('', U.Name) FROM Follow F JOIN User U ON F.Follower = U.Username WHERE F.Followed = ? AND F.CreationDatetime <= ? ORDER BY F.CreationDatetime DESC LIMIT 16")
+	stmt, err := db.c.Prepare("SELECT U.Username, COALESCE('', U.Birthdate), U.ProfilePicPath,  COALESCE('', U.Name) FROM Follow F JOIN User U ON F.Follower = U.Username WHERE F.Followed = ? ORDER BY F.CreationDatetime DESC")
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(followedUsername, startDatetime)
+	rows, err := stmt.Query(followedUsername)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) { // We don't care if no user follows the given one, we'll write the StatusNoContent header if it happens to be the case
 		return nil, err
 	}
@@ -42,15 +42,15 @@ func (db appdbimpl) GetFollowersList(followedUsername string, startDatetime stri
 
 }
 
-func (db appdbimpl) GetFollowingList(followerUsername string, startDatetime string) (*components.UserList, error) {
+func (db appdbimpl) GetFollowingList(followerUsername string) (*components.UserList, error) {
 
-	stmt, err := db.c.Prepare("SELECT U.Username, COALESCE(U.Birthdate, ''), U.ProfilePicPath, COALESCE(U.Name, '') FROM Follow F JOIN User U ON F.Followed = U.Username WHERE F.Follower = ? AND F.CreationDatetime <= ? ORDER BY F.CreationDatetime DESC LIMIT 16")
+	stmt, err := db.c.Prepare("SELECT U.Username, COALESCE(U.Birthdate, ''), U.ProfilePicPath, COALESCE(U.Name, '') FROM Follow F JOIN User U ON F.Followed = U.Username WHERE F.Follower = ? ORDER BY F.CreationDatetime DESC")
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(followerUsername, startDatetime)
+	rows, err := stmt.Query(followerUsername)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) { // We don't care if no user follows the given one, we'll write the StatusNoContent header if it happens to be the case
 		return nil, err
 	}

@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
-	"time"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
@@ -63,23 +61,8 @@ func (rt _router) getFollowingList(w http.ResponseWriter, r *http.Request, ps ht
 		return
 	}
 
-	startDatetime := r.URL.Query().Get("datetime")
-	if len(startDatetime) == 0 {
-		t := time.Now()
-		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
-	} else {
-		if err := components.CheckIfValid(startDatetime, "Datetime"); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.Error("provided datetime not valid")
-			if _, err := w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided datetime not valid").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("error while writing the response")
-			}
-			return
-		}
-	}
-
 	// Send the request to the database
-	users, err := rt.db.GetFollowingList(followingUsername, startDatetime)
+	users, err := rt.db.GetFollowingList(followingUsername)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while getting the list of followings")
@@ -347,14 +330,8 @@ func (rt _router) getFollowersList(w http.ResponseWriter, r *http.Request, ps ht
 		return
 	}
 
-	startDatetime := r.URL.Query().Get("datetime")
-	if len(startDatetime) == 0 {
-		t := time.Now()
-		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
-	}
-
 	// Send the request to the database
-	users, err := rt.db.GetFollowersList(username, startDatetime)
+	users, err := rt.db.GetFollowersList(username)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while getting the list of followers")

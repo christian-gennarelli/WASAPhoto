@@ -81,7 +81,7 @@ func (db appdbimpl) SearchUser(Username string) (*components.UserList, error) {
 	}
 	defer rows.Close()
 
-	if err = users.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 

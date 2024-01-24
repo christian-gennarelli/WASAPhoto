@@ -47,15 +47,15 @@ func (db appdbimpl) UnbanUser(bannerUsername string, bannedUsername string) erro
 	return nil
 }
 
-func (db appdbimpl) GetBanUserList(bannerUsername string, startDatetime string) (*components.UserList, error) {
+func (db appdbimpl) GetBanUserList(bannerUsername string) (*components.UserList, error) {
 
-	stmt, err := db.c.Prepare("SELECT U.Username, U.ProfilePicPath, COALESCE(U.Birthdate, ''), COALESCE(U.Name, '') FROM Ban B JOIN User U ON B.Banned = U.Username WHERE B.Banner = ? AND B.CreationDatetime <= ? ORDER BY B.CreationDatetime DESC LIMIT 16")
+	stmt, err := db.c.Prepare("SELECT U.Username, U.ProfilePicPath, COALESCE(U.Birthdate, ''), COALESCE(U.Name, '') FROM Ban B JOIN User U ON B.Banned = U.Username WHERE B.Banner = ? ORDER BY B.CreationDatetime DESC")
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(bannerUsername, startDatetime)
+	rows, err := stmt.Query(bannerUsername)
 	if err != nil {
 		return nil, err
 	}

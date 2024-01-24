@@ -59,25 +59,25 @@ type AppDatabase interface {
 	RemoveLikeFromPost(Username string, PostID string) error
 	AddCommentToPost(PostID string, Body string, Author string) error
 	RemoveCommentFromPost(PostID string, CommentID string) error
-	GetUserStream(startDatetime string, username string) (*components.Stream, error)
+	GetUserStream(username string) (*components.Stream, error)
 	UploadPost(username string, description string) (*components.Post, error)
 	DeletePost(postID string) (*string, error)
-	GetPostComments(postID string, startDatetime string) (*components.CommentList, error)
-	GetPostLikes(postID string, startDatetime string) (*components.UserList, error)
+	GetPostComments(postID string) (*components.CommentList, error)
+	GetPostLikes(postID string) (*components.UserList, error)
 
 	// Profile queries
 	GetUserProfile(Username string) (*components.Profile, error)
 
 	// Follow queries
-	GetFollowingList(followingUsername string, startDatetime string) (*components.UserList, error)
-	GetFollowersList(followedUsername string, startDatetime string) (*components.UserList, error)
+	GetFollowingList(followingUsername string) (*components.UserList, error)
+	GetFollowersList(followedUsername string) (*components.UserList, error)
 	FollowUser(followerUsername string, followingUsername string) error
 	UnfollowUser(followerUsername string, followingUsername string) error
 
 	// Ban queries
 	BanUser(bannerUsername, bannedUsername string) error
 	UnbanUser(bannerUsername, bannedUsername string) error
-	GetBanUserList(bannerUsername string, startDatetime string) (*components.UserList, error)
+	GetBanUserList(bannerUsername string) (*components.UserList, error)
 	CheckIfBanned(bannerUsername string, bannedUsername string) error
 }
 

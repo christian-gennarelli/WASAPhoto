@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
-	"time"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
@@ -51,23 +49,8 @@ func (rt _router) getBanUserList(w http.ResponseWriter, r *http.Request, ps http
 		return
 	}
 
-	startDatetime := r.URL.Query().Get("datetime")
-	if len(startDatetime) == 0 {
-		t := time.Now()
-		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
-	} else {
-		if err := components.CheckIfValid(startDatetime, "Datetime"); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.Error("provided datetime not valid")
-			if _, err := w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided datetime not valid").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("error while writing the response")
-			}
-			return
-		}
-	}
-
 	// Get the list of banned users
-	bannedUserList, err := rt.db.GetBanUserList(bannerUsername, startDatetime)
+	bannedUserList, err := rt.db.GetBanUserList(bannerUsername)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while getting the banlist for the user")
