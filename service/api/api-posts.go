@@ -57,7 +57,8 @@ func (rt _router) likePhoto(w http.ResponseWriter, r *http.Request, ps httproute
 	err = rt.db.AddLikeToPost(*ownerUsername, *postID)
 	if err != nil {
 		var mess []byte
-		if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
+		// if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
+		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
 			w.WriteHeader(http.StatusNotFound)
 			ctx.Logger.WithError(err).Error("username or post does NOT exist")
 			mess = []byte(fmt.Errorf(components.StatusNotFound, "username or post does NOT exist").Error())
@@ -203,7 +204,8 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	err = rt.db.AddCommentToPost(*postID, comment, *authUsername)
 	if err != nil {
 		var mess []byte
-		if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
+		// if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
+		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
 			w.WriteHeader(http.StatusNotFound)
 			ctx.Logger.WithError(err).Error("username or post does NOT exist")
 			mess = []byte(fmt.Errorf(components.StatusNotFound, "username or post does NOT exist").Error())

@@ -204,7 +204,8 @@ func (rt _router) followUser(w http.ResponseWriter, r *http.Request, ps httprout
 	// Add the authenticated username to the list of users following the username provided in the path
 	err = rt.db.FollowUser(followerUsername, followedUsername)
 	if err != nil {
-		if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
+		// if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
+		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.Error("impossible to follow a non-existing user")
 			if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "impossible to follow a non-existing user").Error())); err != nil {

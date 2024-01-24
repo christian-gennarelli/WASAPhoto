@@ -82,6 +82,7 @@
             <span v-if="!this.modifying"> {{ visitedProfile.user.username }} </span>
             <span v-if="this.modifying">
                 <input type="textbox" v-model="newUsername" @keyup.enter="updateUsername">
+                <span> Remember: username can contain only lower/upper case letters, underscores (_) and dashes (-). </span>
             </span>
             <img src="@/assets/pencil.jpeg" v-if="isModifiable" @click="this.modifying=!this.modifying" style="width: 30px; height: 30px;">
         </span>

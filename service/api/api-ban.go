@@ -163,7 +163,8 @@ func (rt _router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.
 	// Ban the user
 	if err := rt.db.BanUser(bannerUsername, bannedUsername); err != nil {
 		var mess []byte
-		if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
+		// if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
+		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
 			w.WriteHeader(http.StatusNotFound)
 			ctx.Logger.WithError(err).Error("provided username not found")
 			mess = []byte(fmt.Errorf(components.StatusNotFound, "provided username not found").Error())

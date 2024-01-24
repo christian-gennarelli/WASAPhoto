@@ -20,9 +20,6 @@
                 this.$axios.get(
                     '/users/' + this.user.username + '/stream',
                     { 
-                        params: {
-                            datetime: this.postsCount ? this.posts[-1].CreationDatetime : '' // If updating, send last loaded post datetime
-                        },
                         headers: {
                             'Authorization': this.user.token
                         }
