@@ -34,6 +34,7 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 	if err != nil {
 		return nil, err
 	}
+	defer stmt.Close()
 
 	rows, err := stmt.Query(Username)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
