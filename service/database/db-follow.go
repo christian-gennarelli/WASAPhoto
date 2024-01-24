@@ -23,7 +23,6 @@ func (db appdbimpl) GetFollowersList(followedUsername string, startDatetime stri
 	}
 	defer rows.Close()
 
-
 	var userList components.UserList
 	for rows.Next() {
 		var user components.User
@@ -39,7 +38,7 @@ func (db appdbimpl) GetFollowersList(followedUsername string, startDatetime stri
 		return nil, err
 	}
 
-	return userList, nil
+	return &userList, nil
 
 }
 
@@ -57,7 +56,6 @@ func (db appdbimpl) GetFollowingList(followerUsername string, startDatetime stri
 	}
 	defer rows.Close()
 
-
 	var userList components.UserList
 	for rows.Next() {
 		var user components.User
@@ -72,7 +70,7 @@ func (db appdbimpl) GetFollowingList(followerUsername string, startDatetime stri
 		return nil, err
 	}
 
-	return userList, nil
+	return &userList, nil
 
 }
 
