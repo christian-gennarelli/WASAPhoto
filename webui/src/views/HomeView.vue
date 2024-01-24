@@ -1,56 +1,66 @@
 <script>
-export default {
-	data: function() {
-		return {
-			errormsg: null,
-			loading: false,
-			some_data: null,
-		}
-	},
-	methods: {
-		async refresh() {
-			this.loading = true;
-			this.errormsg = null;
-			try {
-				let response = await this.$axios.get("/");
-				this.some_data = response.data;
-			} catch (e) {
-				this.errormsg = e.toString();
-			}
-			this.loading = false;
-		},
-	},
-	mounted() {
-		this.refresh()
-	}
-}
+    import Header from '../components/Header.vue'
+    import Post from '../components/Post.vue'
+    export default {
+        data() {
+            return{ 
+                user: { // User info
+                    token: '',
+                    username: '',
+                    name: '',
+                    birthdate: '',
+                    profilePic: '',
+                },
+                posts: [],
+                postsCount: 0,
+            }
+        },
+        methods: {
+            getUserStream(){
+                this.$axios.get(
+                    '/users/' + this.user.username + '/stream',
+                    { 
+                        headers: {
+                            'Authorization': this.user.token
+                        }
+                    }
+                ).then((res) => {
+                    this.posts = res.data
+                    console.log(res.data)
+                }).catch((e) => {
+                    alert(e.data.ErrorCode + " " + e.data.Description)
+                })
+            },
+        },
+        components: {
+            Header: Header,
+            Post: Post
+        },
+        created() {
+
+            // Username and token
+            this.user.username = localStorage.getItem('username')
+            this.user.token = localStorage.getItem('token')
+            this.user.profilePic = localStorage.getItem('profilePic')
+            this.user.birthdate = localStorage.getItem('birthdate')
+            this.user.name = localStorage.getItem('name')
+
+            console.log(this.user.token)
+
+            // Stream
+            this.getUserStream();
+        }
+    }
 </script>
 
 <template>
-	<div>
-		<div
-			class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-			<h1 class="h2">Home page</h1>
-			<div class="btn-toolbar mb-2 mb-md-0">
-				<div class="btn-group me-2">
-					<button type="button" class="btn btn-sm btn-outline-secondary" @click="refresh">
-						Refresh
-					</button>
-					<button type="button" class="btn btn-sm btn-outline-secondary" @click="exportList">
-						Export
-					</button>
-				</div>
-				<div class="btn-group me-2">
-					<button type="button" class="btn btn-sm btn-outline-primary" @click="newItem">
-						New
-					</button>
-				</div>
-			</div>
-		</div>
-
-		<ErrorMsg v-if="errormsg" :msg="errormsg"></ErrorMsg>
-	</div>
+    <Header></Header>
+    <p v-if="!posts"> No posts to see yet... start following!</p>
+    <div>
+        <Post 
+            v-if="posts"
+            v-for="post in posts" 
+            :post="post" 
+        ></Post>
+    </div>
 </template>
-
-<style>
-</style>

@@ -64,7 +64,7 @@ func (db appdbimpl) GetBanUserList(bannerUsername string, startDatetime string) 
 	var bannedUserList components.UserList
 	for rows.Next() {
 		var bannedUser components.User
-		if err = rows.Scan(&bannedUser.Username.Value, &bannedUser.ProfilePic, &bannedUser.Birthdate, &bannedUser.Name); err != nil {
+		if err = rows.Scan(&bannedUser.Username, &bannedUser.ProfilePic, &bannedUser.Birthdate, &bannedUser.Name); err != nil {
 			return nil, err
 		}
 

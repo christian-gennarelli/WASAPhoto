@@ -47,9 +47,9 @@ type AppDatabase interface {
 	Ping() error
 
 	// User queries
-	GetUsernameByToken(Id string) (*components.Username, error)
-	GetOwnerUsernameOfComment(CommentID string) (*components.Username, error)
-	PostUserID(Username string) (*components.ID, error)
+	GetUsernameByToken(Id string) (*string, error)
+	GetOwnerUsernameOfComment(CommentID string) (*string, error)
+	PostUserID(Username string) (*components.User, error)
 	SearchUser(Username string) (*components.UserList, error)
 	UpdateUsername(NewUsername string, OldUsername string) error
 
@@ -107,7 +107,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 	CREATE TABLE IF NOT EXISTS User (
 		ID STRING UNIQUE NOT NULL,
 		Username STRING PRIMARY KEY NOT NULL,
-		ProfilePicPath STRING DEFAULT 'photos/profile_pics/default.png',
+		ProfilePicPath STRING DEFAULT 'profile_pics/default.png',
 		Birthdate STRING,
 		Name STRING
 	);

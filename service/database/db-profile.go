@@ -1,12 +1,8 @@
 package database
 
 import (
-	"bufio"
 	"database/sql"
-	"encoding/base64"
 	"errors"
-	"io"
-	"os"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
 )
@@ -26,22 +22,15 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 		return nil, err
 	}
 
-	// Open the image
-	img, err := os.Open(user.ProfilePic)
-	if err != nil {
-		return nil, err
-	}
-	reader := bufio.NewReader(img)
-	// Read it
-	content, err := io.ReadAll(reader)
-	if err != nil {
-		return nil, err
-	}
-	// Convert it in base64
-	user.ProfilePic = base64.StdEncoding.EncodeToString(content)
-
 	// Retrieve the photos posted by this user
-	stmt, err = db.c.Prepare("SELECT PostID, Author, Description, CreationDatetime, PhotoPath FROM Post WHERE Author = ?")
+	stmt, err = db.c.Prepare(`SELECT 
+									P.PostID, 
+									P.Author, 
+									P.Description, 
+									P.CreationDatetime, 
+									P.PhotoPath,
+									(SELECT COUNT(*) FROM Like L WHERE L.PostID = P.PostID) as Likes 
+							FROM Post P WHERE Author = ?`)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +45,7 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 	var posts []components.Post
 	for rows.Next() {
 		var post components.Post
-		if err = rows.Scan(&post.PostID.Value, &post.Author.Value, &post.Description, &post.CreationDatetime, &post.Photo); err != nil {
+		if err = rows.Scan(&post.PostID, &post.Author, &post.Description, &post.CreationDatetime, &post.Photo, &post.Likes); err != nil {
 			return nil, err
 		}
 		posts = append(posts, post)

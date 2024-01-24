@@ -11,16 +11,25 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router) *components.Username {
+func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router) *string {
 
 	// Retrieve the Auth token and check if is valid
-	token := components.ID{Value: r.Header.Get("Authorization")}
-	if err := token.CheckIfValid(); err != nil {
+	token := r.Header.Get("Authorization")
+	if len(token) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		ctx.Logger.Error("no auth token provided")
+		if _, err := w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "no auth token provided").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("errow while writing the response")
+		}
+		return nil
+	}
+
+	if err := components.CheckIfValid(token, "ID"); err != nil {
 		if errors.Is(err, components.ErrIDNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.WithError(err).Error("provided auth token not valid")
 			if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided auth token not valid").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("errow while writing the response")
+				ctx.Logger.WithError(err).Error("error while writing the response")
 			}
 			return nil
 		}
@@ -33,8 +42,7 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 	}
 
 	// Retrieve the username (if valid) associated to the given Auth token and check if there exists an user registered with such token
-	var username *components.Username
-	username, err := rt.db.GetUsernameByToken(token.Value)
+	username, err := rt.db.GetUsernameByToken(token)
 	if err != nil {
 		var mess []byte
 		if errors.Is(err, sql.ErrNoRows) {
@@ -47,7 +55,7 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while getting the username associated with the given token" /*err*/).Error())
 		}
 		if _, err = w.Write(mess); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return nil
 	}
@@ -56,11 +64,11 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 
 }
 
-func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router, retrievePost bool) (*components.Username, *components.ID) {
+func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext, rt _router, retrievePost bool) (*string, *string) {
 
 	// Retrieve the username from the path and check if it is valid
-	ownerUsername := components.Username{Value: ps.ByName("username")}
-	if err := ownerUsername.CheckIfValid(); err != nil {
+	ownerUsername := ps.ByName("username")
+	if err := components.CheckIfValid(ownerUsername, "Username"); err != nil {
 		var mess []byte
 		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -82,26 +90,26 @@ func helperPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 	}
 
 	// Retrieve the id of the post the user wants to like and check if it exists
-	postID := components.ID{Value: ps.ByName("post_id")}
-	if err := postID.CheckIfValid(); err != nil {
-		var mess []byte
-		if errors.Is(err, components.ErrIDNotValid) {
-			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.Error("provided post id not valid")
-			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided post id not valid").Error())
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			ctx.Logger.WithError(err).Error("error while checking if the post id is valid")
-			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the post id is valid").Error())
-		}
-		if _, err = w.Write(mess); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return nil, nil
-	}
+	postID := ps.ByName("post_id")
+	// if err := components.CheckIfValid(postID, "ID"); err != nil {
+	// 	var mess []byte
+	// 	if errors.Is(err, components.ErrIDNotValid) {
+	// 		w.WriteHeader(http.StatusBadRequest)
+	// 		ctx.Logger.Error("provided post id not valid")
+	// 		mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided post id not valid").Error())
+	// 	} else {
+	// 		w.WriteHeader(http.StatusInternalServerError)
+	// 		ctx.Logger.WithError(err).Error("error while checking if the post id is valid")
+	// 		mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the post id is valid").Error())
+	// 	}
+	// 	if _, err = w.Write(mess); err != nil {
+	// 		ctx.Logger.WithError(err).Error("error while writing the response")
+	// 	}
+	// 	return nil, nil
+	// }
 
 	// Check if the username in the path is the owner of the given post
-	if err := rt.db.CheckIfOwnerPost(ownerUsername.Value, postID.Value); err != nil {
+	if err := rt.db.CheckIfOwnerPost(ownerUsername, postID); err != nil {
 		var mess []byte
 		if errors.Is(err, sql.ErrNoRows) {
 			w.WriteHeader(http.StatusNotFound)

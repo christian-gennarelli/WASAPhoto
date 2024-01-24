@@ -23,8 +23,8 @@ func (rt _router) getBanUserList(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// Retrieve the username from the path and check if it's valid
-	bannerUsername := components.Username{Value: ps.ByName("username")}
-	if err := bannerUsername.CheckIfValid(); err != nil {
+	bannerUsername := ps.ByName("username")
+	if err := components.CheckIfValid(bannerUsername, "Username"); err != nil {
 		var mess []byte
 		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
@@ -42,7 +42,7 @@ func (rt _router) getBanUserList(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// Check if the username in the path is the same as the authenticated one
-	if bannerUsername.Value != authUsername.Value {
+	if bannerUsername != *authUsername {
 		w.WriteHeader(http.StatusUnauthorized)
 		ctx.Logger.Error("cannot unban an user on behalf of another user")
 		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot unban an user on behalf of another user").Error())); err != nil {
@@ -55,10 +55,19 @@ func (rt _router) getBanUserList(w http.ResponseWriter, r *http.Request, ps http
 	if len(startDatetime) == 0 {
 		t := time.Now()
 		startDatetime = strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
+	} else {
+		if err := components.CheckIfValid(startDatetime, "Datetime"); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			ctx.Logger.Error("provided datetime not valid")
+			if _, err := w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided datetime not valid").Error())); err != nil {
+				ctx.Logger.WithError(err).Error("error while writing the response")
+			}
+			return
+		}
 	}
 
 	// Get the list of banned users
-	bannedUserList, err := rt.db.GetBanUserList(bannerUsername.Value, startDatetime)
+	bannedUserList, err := rt.db.GetBanUserList(bannerUsername, startDatetime)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while getting the banlist for the user")
@@ -104,8 +113,8 @@ func (rt _router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	// Retrieve the username from the path and check if it's valid
-	bannerUsername := components.Username{Value: ps.ByName("username")}
-	if err := bannerUsername.CheckIfValid(); err != nil {
+	bannerUsername := ps.ByName("username")
+	if err := components.CheckIfValid(bannerUsername, "Username"); err != nil {
 		var mess []byte
 		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
@@ -123,18 +132,18 @@ func (rt _router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	// Check if the username in the path is the same as the authenticated one
-	if bannerUsername.Value != authUsername.Value {
+	if bannerUsername != *authUsername {
 		w.WriteHeader(http.StatusUnauthorized)
-		ctx.Logger.Error("cannot unban an user on behalf of another user")
-		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot unban an user on behalf of another user").Error())); err != nil {
+		ctx.Logger.Error("cannot ban an user on behalf of another user")
+		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot ban an user on behalf of another user").Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
 
 	// Retrieve the username to be added to the list of banned user of the authenticated user from the query
-	bannedUsername := components.Username{Value: r.URL.Query().Get("banned_username")}
-	if err := bannedUsername.CheckIfValid(); err != nil {
+	bannedUsername := r.URL.Query().Get("banned_username")
+	if err := components.CheckIfValid(bannedUsername, "Username"); err != nil {
 		var mess []byte
 		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
@@ -152,9 +161,10 @@ func (rt _router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	// Ban the user
-	if err := rt.db.BanUser(bannerUsername.Value, bannedUsername.Value); err != nil {
+	if err := rt.db.BanUser(bannerUsername, bannedUsername); err != nil {
 		var mess []byte
-		if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
+		// if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
+		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
 			w.WriteHeader(http.StatusNotFound)
 			ctx.Logger.WithError(err).Error("provided username not found")
 			mess = []byte(fmt.Errorf(components.StatusNotFound, "provided username not found").Error())
@@ -182,8 +192,8 @@ func (rt _router) unbanUser(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 
 	// Retrieve the username from the path and check if it's valid
-	bannerUsername := components.Username{Value: ps.ByName("username")}
-	err := bannerUsername.CheckIfValid()
+	bannerUsername := ps.ByName("username")
+	err := components.CheckIfValid(bannerUsername, "Username")
 	if err != nil {
 		var mess []byte
 		if errors.Is(err, components.ErrUsernameNotValid) {
@@ -202,7 +212,7 @@ func (rt _router) unbanUser(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 
 	// Check if the username in the path is the same as the authenticated one
-	if bannerUsername.Value != authUsername.Value {
+	if bannerUsername != *authUsername {
 		w.WriteHeader(http.StatusUnauthorized)
 		ctx.Logger.Error("cannot unban an user on behalf of another user")
 		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot unban an user on behalf of another user").Error())); err != nil {
@@ -212,8 +222,8 @@ func (rt _router) unbanUser(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 
 	// Retrieve the username to be remove from the list of banned user of the authenticated user from the path
-	bannedUsername := components.Username{Value: ps.ByName("banned_username")}
-	if err := bannedUsername.CheckIfValid(); err != nil {
+	bannedUsername := ps.ByName("banned_username")
+	if err := components.CheckIfValid(bannedUsername, "Username"); err != nil {
 		var mess []byte
 		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
@@ -231,7 +241,7 @@ func (rt _router) unbanUser(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 
 	// Unban the user
-	if err := rt.db.UnbanUser(bannerUsername.Value, bannedUsername.Value); err != nil {
+	if err := rt.db.UnbanUser(bannerUsername, bannedUsername); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while unbanning the user")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while unbanning the user").Error())); err != nil {
