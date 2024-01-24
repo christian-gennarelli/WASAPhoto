@@ -29,6 +29,7 @@ type Post struct {
 	Photo            string // URL path to the image, stored server-side
 	CreationDatetime string
 	Description      string
+	Likes            int
 }
 
 type Stream struct {

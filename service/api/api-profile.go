@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os/exec"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
@@ -175,20 +176,35 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	err = rt.db.UpdateUsername(newUsername, username)
 	if err != nil {
 		var mess []byte
+		ctx.Logger.Info(errors.Is(err, sqlite3.ErrConstraint))
+		ctx.Logger.Info()
 		if errors.Is(err, sql.ErrNoRows) { // Old username not found
 			w.WriteHeader(http.StatusNotFound)
 			ctx.Logger.WithError(err).Error("provided username does not exist")
 			mess = []byte(fmt.Errorf(components.StatusNotFound, "provided username does not exists").Error())
 		} else if errors.Is(err, sqlite3.ErrConstraintUnique) { // Username already exists
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusNotAcceptable)
 			ctx.Logger.WithError(err).Error("provided username already exists")
-			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username already exists").Error())
+			mess = []byte(fmt.Errorf(components.StatusNotAcceptable, "provided username already exists").Error())
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error("error while updating the username")
 			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while updating the username").Error())
 		}
 		if _, err = w.Write(mess); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	// Change photo profile name
+	srcFolder := "photos/profile_pics/" + username + ".png"
+	destFolder := "photos/profile_pics/" + newUsername + ".png"
+	mvCmd := exec.Command("mv", srcFolder, destFolder)
+	if err := mvCmd.Run(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while updating the user's profile pic")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while updating the user's profile pic").Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return

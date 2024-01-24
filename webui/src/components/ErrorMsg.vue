@@ -1,14 +1,11 @@
 <script>
-export default {
-	props: ['msg']
-}
+    export default {
+        props: ['error']
+    }
 </script>
 
 <template>
-	<div class="alert alert-danger" role="alert">
-		{{ msg }}
-	</div>
+    <div v-if="error.ErrorCode">
+        <p> {{ error.ErrorCode + " " +  error.Description }}  </p>
+    </div>
 </template>
-
-<style>
-</style>

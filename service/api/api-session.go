@@ -14,7 +14,7 @@ import (
 
 func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "application/json")
 
 	// Parse the username of the user is trying to login
 	if contentType := r.Header.Get("Content-Type"); contentType != "text/plain" {
@@ -42,7 +42,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 		var mess []byte
 		if errors.Is(err, components.ErrUsernameNotValid) {
 			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.WithError(err).Error("provided username not valid")
+			ctx.Logger.WithError(err).Error("provided username not valid: " + username)
 			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -56,7 +56,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	// Get the ID from the database
-	ID, err := rt.db.PostUserID(username)
+	user, err := rt.db.PostUserID(username)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while parsing the id for the given user")
@@ -66,7 +66,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 		return
 	}
 
-	response, err := json.MarshalIndent(ID, "", " ")
+	response, err := json.MarshalIndent(user, "", " ")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while enconding the response body as JSON")

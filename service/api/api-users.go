@@ -17,6 +17,7 @@ func (rt _router) searchUser(w http.ResponseWriter, r *http.Request, ps httprout
 	// Parse the string we want to match in usernames
 	searchedUsername := r.URL.Query().Get("searched_username")
 
+	// USERNAME SUBSTRING
 	// Check if the provided username is valid
 	// if err := components.CheckIfValid(searchedUsername, "Username"); err != nil {
 	// 	var mess []byte

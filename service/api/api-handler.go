@@ -48,7 +48,7 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.PUT("/users/:username/profile/", rt.wrap(rt.setMyUserName))
 
 	// Photo routes
-	rt.router.GET("/photos/:photo_path", rt.wrap(rt.getPhotoFromURL))
+	rt.router.GET("/photos/", rt.wrap(rt.getPhotoFromURL))
 
 	// Post routes
 	rt.router.PUT("/users/:username/profile/posts/:post_id/likes/", rt.wrap(rt.likePhoto))

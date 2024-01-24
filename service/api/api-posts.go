@@ -240,22 +240,6 @@ func (rt _router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps http
 
 	// Retrieve the id of the comment from the path and check if it is valid
 	commentID := ps.ByName("comment_id")
-	// if err := components.CheckIfValid(commentID, "ID"); err != nil {
-	// 	var mess []byte
-	// 	if errors.Is(err, components.ErrIDNotValid) {
-	// 		w.WriteHeader(http.StatusBadRequest)
-	// 		ctx.Logger.Error("provided comment ID not valid")
-	// 		mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided comment ID not valid").Error())
-	// 	} else {
-	// 		w.WriteHeader(http.StatusInternalServerError)
-	// 		ctx.Logger.WithError(err).Error("error while checking if the comment ID is valid")
-	// 		mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the comment ID is valid").Error())
-	// 	}
-	// 	if _, err = w.Write(mess); err != nil {
-	// 		ctx.Logger.WithError(err).Error("error while writing the response")
-	// 	}
-	// 	return
-	// }
 
 	// Retrieve the owner of the comment, and check if the authenticated user is the owner of the comment
 	ownerUsernameComment, err := rt.db.GetOwnerUsernameOfComment(commentID)
@@ -407,7 +391,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	ctx.Logger.Info("Width: " + strconv.FormatInt(int64(im.Width), 10))
 
 	// Check the size of the image: it must be 1024x1024 px
-	// if im.Height == 1024 || im.Width == 1024 {
+	// if im.Height != 1080 || im.Width != 1080 {
 	// 	w.WriteHeader(http.StatusBadRequest)
 	// 	ctx.Logger.Error("photo does not satisfy size requirements: it must be 1024x1024 px")
 	// 	if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "photo does not satisfy size requirements: it must be 1024x1024 px").Error())); err != nil {
@@ -466,7 +450,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Save the file locally
-	uploadedFile, err := os.Create(post.Photo)
+	uploadedFile, err := os.Create("photos/" + post.Photo)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while creating the photo locally")

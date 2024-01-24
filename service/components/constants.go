@@ -13,6 +13,7 @@ const StatusBadRequest = "{\"ErrorCode\": 400, \"Description\": \"Bad Request: %
 const StatusUnauthorized = "{\"ErrorCode\": 401, \"Description\": \"Unauthorized: %s\"}"
 const StatusForbidden = "{\"ErrorCode\": 403, \"Description\": \"Forbidden: %s\"}"
 const StatusNotFound = "{\"ErrorCode\": 404, \"Description\": \"Resource Not Found: %s\"}"
+const StatusNotAcceptable = "{\"ErrorCode\": 406, \"Description\": \"Not Acceptable: %s\"}"
 const StatusUnsupportedMediaType = "{\"ErrorCode\": 415, \"Description\": \"Unsupported media type\"}"
 
 var ErrIDNotValid = fmt.Errorf("provided ID not valid")

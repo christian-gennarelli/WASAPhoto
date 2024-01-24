@@ -29,7 +29,7 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 			w.WriteHeader(http.StatusBadRequest)
 			ctx.Logger.WithError(err).Error("provided auth token not valid")
 			if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided auth token not valid").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("errow while writing the response")
+				ctx.Logger.WithError(err).Error("error while writing the response")
 			}
 			return nil
 		}
@@ -55,7 +55,7 @@ func helperAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ct
 			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while getting the username associated with the given token" /*err*/).Error())
 		}
 		if _, err = w.Write(mess); err != nil {
-			ctx.Logger.WithError(err).Error("errow while writing the response")
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return nil
 	}
