@@ -30,7 +30,7 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 									P.CreationDatetime, 
 									P.PhotoPath,
 									(SELECT COUNT(*) FROM Like L WHERE L.PostID = P.PostID) as Likes 
-							FROM Post P WHERE Author = ?`)
+							FROM Post P WHERE Author = ? ORDER BY P.CreationDatetime DESC`)
 	if err != nil {
 		return nil, err
 	}
