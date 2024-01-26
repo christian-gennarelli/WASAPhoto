@@ -497,7 +497,12 @@ paths:
               type: object
               properties:
                 photo:
-                  $ref: "#/components/schemas/Photo"
+                  description: Image to be uploaded
+                  type: string
+                  minLength: 0
+                  maxLength: 16000 # 16 Mb
+                  pattern: '^.*$'
+                  example: a6Hdjso3moTTmal
                 description: 
                   $ref: '#/components/schemas/Comment'
       responses:
