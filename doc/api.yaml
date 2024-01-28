@@ -85,7 +85,6 @@ components:
           type: object
           description: |- 
             Collection of the posts posted by this user.
-            At most 16 posts are returned at each request, according to some backend principle (example: datetime)
           items:
             $ref: '#/components/schemas/PostsStream'
 
