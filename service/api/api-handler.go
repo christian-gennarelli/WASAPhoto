@@ -40,9 +40,6 @@ func (rt *_router) Handler() http.Handler {
 	// Session routes
 	rt.router.POST("/session", rt.wrap(rt.doLogin))
 
-	// User routes
-	rt.router.GET("/users/", rt.wrap(rt.searchUser))
-
 	// Profile routes
 	rt.router.GET("/users/:username/profile/", rt.wrap(rt.getUserProfile))
 	rt.router.PUT("/users/:username/profile/", rt.wrap(rt.setMyUserName))
@@ -53,7 +50,7 @@ func (rt *_router) Handler() http.Handler {
 	// Post routes
 	rt.router.PUT("/users/:username/profile/posts/:post_id/likes/", rt.wrap(rt.likePhoto))
 	rt.router.DELETE("/users/:username/profile/posts/:post_id/likes/:liker_username", rt.wrap(rt.unlikePhoto))
-	rt.router.GET("/users/:username/profile/posts/:post_id/likes/", rt.wrap(rt.getPostLikes)) // !!!!!!!!!!!!
+	rt.router.GET("/users/:username/profile/posts/:post_id/likes/", rt.wrap(rt.getPostLikes))
 	rt.router.POST("/users/:username/profile/posts/:post_id/comments/", rt.wrap(rt.commentPhoto))
 	rt.router.DELETE("/users/:username/profile/posts/:post_id/comments/:comment_id", rt.wrap(rt.uncommentPhoto))
 	rt.router.POST("/users/:username/profile/posts/", rt.wrap(rt.uploadPhoto))
@@ -66,13 +63,13 @@ func (rt *_router) Handler() http.Handler {
 	// Follow routes
 	rt.router.PUT("/users/:username/followings/", rt.wrap(rt.followUser))
 	rt.router.DELETE("/users/:username/followings/:followed_username", rt.wrap(rt.unfollowUser))
-	rt.router.GET("/users/:username/followings/", rt.wrap(rt.getFollowingList)) // !!!!!!!!!!!!
-	rt.router.GET("/users/:username/followers/", rt.wrap(rt.getFollowersList))  // !!!!!!!!!!!!
+	rt.router.GET("/users/:username/followings/", rt.wrap(rt.getFollowingList))
+	rt.router.GET("/users/:username/followers/", rt.wrap(rt.getFollowersList))
 
 	// Ban routes
 	rt.router.PUT("/users/:username/banned/", rt.wrap(rt.banUser))
 	rt.router.DELETE("/users/:username/banned/:banned_username", rt.wrap(rt.unbanUser))
-	rt.router.GET("/users/:username/banned/", rt.wrap(rt.getBanUserList)) // !!!!!!!!!!!!
+	rt.router.GET("/users/:username/banned/", rt.wrap(rt.getBanUserList))
 
 	return rt.router
 }

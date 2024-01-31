@@ -242,54 +242,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
-  /users/:
-    parameters:
-      - in: query
-        name: searched_username
-        description: Username that the authenticated user is trying to find.
-        schema:
-          $ref: '#/components/schemas/Username'
-    get:
-      operationId: searchUser
-      tags: ['USER']
-      summary: Search for a user
-      description: |-
-        A particular user - here, "username" - can research another user - here, "searched-user" - 
-        or a set of users by their usernames matching the substring provided.
-      responses:
-        '200': # OK
-          description: List of returned usernames matching the provided substring.
-          content:
-            application/json:
-              schema: 
-                $ref: '#/components/schemas/UserList'
-        '204': # Content not found
-          description: No user has been found with such a substring in their usernames.
-        '400': # Bad request provided
-          description: The request cannot be processed.
-          content:  
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401': # Unauthenticated
-          description: The client has not been authenticated (yet).
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404': # Content not found
-          description: Provided username not found. 
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500': # Internal server error.
-          description: Internal server error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
   
   /users/{username}/stream:
     parameters:
