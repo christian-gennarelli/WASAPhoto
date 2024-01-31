@@ -28,13 +28,13 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 									P.Author, 
 									P.Description, 
 									P.CreationDatetime, 
-									P.PhotoPath,
-									(SELECT COUNT(*) FROM Like L WHERE L.PostID = P.PostID) as Likes 
+									P.PhotoPath
 							FROM Post P WHERE Author = ? ORDER BY P.CreationDatetime DESC`)
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
+	//(SELECT COUNT(*) FROM Like L WHERE L.PostID = P.PostID) as Likes
 
 	rows, err := stmt.Query(Username)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -45,15 +45,53 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 	var posts []components.Post
 	for rows.Next() {
 		var post components.Post
-		if err = rows.Scan(&post.PostID, &post.Author, &post.Description, &post.CreationDatetime, &post.Photo, &post.Likes); err != nil {
+		if err = rows.Scan(&post.PostID, &post.Author, &post.Description, &post.CreationDatetime, &post.Photo); err != nil {
 			return nil, err
 		}
+		// row, err := db.c.Query("SELECT U.Username, COALESCE(U.Birthdate, ''), COALESCE(U.Name, ''), U.ProfilePicPath FROM Like L JOIN User U ON U.Username = L.Liker WHERE L.PostID = ?", post.PostID)
+		// if err != nil {
+		// 	return nil, err
+		// }
+
+		// var likers []components.User
+		// for row.Next() {
+		// 	var user components.User
+		// 	if err = row.Scan(&user.Username, &user.Birthdate, &user.Name, &user.ProfilePic); err != nil {
+		// 		return nil, err
+		// 	}
+		// 	likers = append(likers, user)
+		// }
+
+		// if err := row.Err(); err != nil {
+		// 	return nil, err
+		// }
+
+		// post.Likes = likers
+
+		likers, err := db.GetPostLikes(post.PostID)
+		if err != nil {
+			return nil, err
+		}
+		post.Likes = likers.Users
+
 		posts = append(posts, post)
 	}
 
+	followings, err := db.GetFollowingList(Username)
+	if err != nil {
+		return nil, err
+	}
+
+	followers, err := db.GetFollowersList(Username)
+	if err != nil {
+		return nil, err
+	}
+
 	profile := components.Profile{
-		User:  user,
-		Posts: posts,
+		User:       user,
+		Posts:      posts,
+		Followings: followings.Users,
+		Followers:  followers.Users,
 	}
 
 	if err := rows.Err(); err != nil {

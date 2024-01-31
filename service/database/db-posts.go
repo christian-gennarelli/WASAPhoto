@@ -108,8 +108,7 @@ func (db appdbimpl) GetUserStream(username string) (*components.Stream, error) {
 									P.Author, 
 									P.CreationDatetime, 
 									P.Description, 
-									P.PhotoPath,
-									(SELECT COUNT(*) FROM Like L WHERE L.PostID = P.PostID) as Likes 
+									P.PhotoPath
 							FROM Post P JOIN Follow F ON P.Author = F.Followed WHERE F.Follower = ? ORDER BY P.CreationDatetime DESC`)
 	if err != nil {
 		return nil, err
@@ -125,9 +124,16 @@ func (db appdbimpl) GetUserStream(username string) (*components.Stream, error) {
 	var postStream components.Stream
 	for rows.Next() {
 		var post components.Post
-		if err := rows.Scan(&post.PostID, &post.Author, &post.CreationDatetime, &post.Description, &post.Photo, &post.Likes); err != nil {
+		if err := rows.Scan(&post.PostID, &post.Author, &post.CreationDatetime, &post.Description, &post.Photo); err != nil {
 			return nil, err
 		}
+
+		likers, err := db.GetPostLikes(post.PostID)
+		if err != nil {
+			return nil, err
+		}
+		post.Likes = likers.Users
+
 		postStream.Posts = append(postStream.Posts, post)
 	}
 

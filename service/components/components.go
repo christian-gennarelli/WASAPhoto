@@ -15,8 +15,10 @@ type User struct {
 }
 
 type Profile struct {
-	User  User
-	Posts []Post
+	User       User
+	Posts      []Post
+	Followings []User
+	Followers  []User
 }
 
 type UserList struct {
@@ -29,7 +31,7 @@ type Post struct {
 	Photo            string // URL path to the image, stored server-side
 	CreationDatetime string
 	Description      string
-	Likes            int
+	Likes            []User
 }
 
 type Stream struct {

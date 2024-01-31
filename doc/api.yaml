@@ -106,10 +106,8 @@ components:
           minLength: 0
           maxLength: 128
           pattern: ''
-        likes:
-          description: Number of users liking the post.
-          type: integer
-          example: 47
+        likers:
+          $ref: '#/components/schemas/UserList'
 
     PostsStream:
       title: Stream

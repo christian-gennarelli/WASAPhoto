@@ -6,7 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	_ "image/png" // Blank import for accepting png images with the image package
+	_ "image/jpeg" // Blank import for accepting jpeg images with the image package
+	_ "image/png"  // Blank import for accepting png images with the image package
 	"io"
 	"net/http"
 	"os"
@@ -53,7 +54,7 @@ func (rt _router) likePhoto(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 
 	// Add the username of the authenticated user to the list of likes of the post
-	err = rt.db.AddLikeToPost(*ownerUsername, *postID)
+	err = rt.db.AddLikeToPost(*authUsername, *postID)
 	if err != nil {
 		var mess []byte
 		// if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
@@ -352,7 +353,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 	ctx.Logger.Info(http.DetectContentType(buff))
-	if http.DetectContentType(buff) != "image/png" {
+	if http.DetectContentType(buff) != "image/png" && http.DetectContentType(buff) != "image/jpeg" {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.Error("provided file not an image")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "provided file not an image").Error())); err != nil {
@@ -698,7 +699,7 @@ func (rt _router) getPostLikes(w http.ResponseWriter, r *http.Request, ps httpro
 	err := rt.db.CheckIfBanned(*usernameAuth, *usernameOwner)
 	if err == nil {
 		w.WriteHeader(http.StatusForbidden)
-		ctx.Logger.Error("cannot get the comments of a post of a banned user or that has banned the authenticated user")
+		ctx.Logger.Error("cannot get the likes of a post of a banned user or that has banned the authenticated user")
 		if _, err = w.Write([]byte(fmt.Errorf(components.StatusForbidden, "cannot get the comments of a post of a banned user or that has banned the authenticated user").Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
