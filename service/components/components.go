@@ -19,6 +19,7 @@ type Profile struct {
 	Posts      []Post
 	Followings []User
 	Followers  []User
+	Banned     []User
 }
 
 type UserList struct {

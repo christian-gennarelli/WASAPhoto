@@ -1,10 +1,6 @@
 package database
 
 import (
-	"bufio"
-	"encoding/base64"
-	"io"
-	"os"
 	"strconv"
 	"time"
 
@@ -26,6 +22,32 @@ func (db appdbimpl) BanUser(bannerUsername string, bannedUsername string) error 
 	}
 
 	if err = db.UnfollowUser(bannerUsername, bannedUsername); err != nil {
+		return err
+	}
+
+	stmt, err = db.c.Prepare("DELETE FROM Like WHERE PostID IN (SELECT P.PostID FROM Post P JOIN Like L ON L.PostID = P.PostID WHERE L.Liker = ? AND P.Author = ?)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err = stmt.Exec(bannerUsername, bannedUsername); err != nil {
+		return err
+	}
+	if _, err = stmt.Exec(bannedUsername, bannerUsername); err != nil {
+		return err
+	}
+
+	stmt, err = db.c.Prepare("DELETE FROM Comment WHERE PostID IN (SELECT P.PostID FROM Post P JOIN Comment C ON C.PostID = P.PostID WHERE C.Author = ? AND P.Author = ?)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err = stmt.Exec(bannerUsername, bannedUsername); err != nil {
+		return err
+	}
+	if _, err = stmt.Exec(bannedUsername, bannerUsername); err != nil {
 		return err
 	}
 
@@ -67,22 +89,6 @@ func (db appdbimpl) GetBanUserList(bannerUsername string) (*components.UserList,
 		if err = rows.Scan(&bannedUser.Username, &bannedUser.ProfilePic, &bannedUser.Birthdate, &bannedUser.Name); err != nil {
 			return nil, err
 		}
-
-		// Open the image
-		img, err := os.Open(bannedUser.ProfilePic)
-		if err != nil {
-			return nil, err
-		}
-		reader := bufio.NewReader(img)
-
-		// Read it
-		content, err := io.ReadAll(reader)
-		if err != nil {
-			return nil, err
-		}
-
-		// Turn it into base64
-		bannedUser.ProfilePic = base64.StdEncoding.EncodeToString(content)
 
 		bannedUserList.Users = append(bannedUserList.Users, bannedUser)
 	}

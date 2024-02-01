@@ -87,11 +87,17 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 		return nil, err
 	}
 
+	banned, err := db.GetBanUserList(Username)
+	if err != nil {
+		return nil, err
+	}
+
 	profile := components.Profile{
 		User:       user,
 		Posts:      posts,
 		Followings: followings.Users,
 		Followers:  followers.Users,
+		Banned:     banned.Users,
 	}
 
 	if err := rows.Err(); err != nil {

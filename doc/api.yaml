@@ -57,7 +57,6 @@ components:
       title: UserList
       description: |-
         Collection of users. 
-        A maximum number of 16 users is returned, according to some backend principle (example: datetime)
       type: array
       items:
         $ref: '#/components/schemas/User'  
@@ -87,6 +86,12 @@ components:
             Collection of the posts posted by this user.
           items:
             $ref: '#/components/schemas/PostsStream'
+        followers:
+          $ref: '#/components/schemas/UserList'
+        followings:
+          $ref: '#/components/schemas/UserList'
+        banned:
+          $ref: '#/components/schemas/UserList'
 
 
     Post:
