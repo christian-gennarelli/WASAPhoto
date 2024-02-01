@@ -40,7 +40,7 @@ const router = createRouter({
 router.beforeEach(async (to, from) => {
 
 	// the non-authenticated client asks for a page different from the login one
-	let token = await localStorage.getItem('token');
+	let token = localStorage.getItem('ID');
 	if (token === null && to.name !== 'login') {
 		return { name: 'login' };
 	}
