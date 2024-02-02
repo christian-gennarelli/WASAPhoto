@@ -1,12 +1,19 @@
 <script>
     import { getImgUrl } from '../functions/getImgUrl';
+import PopupUserlist from './PopupUserlist.vue';
     export default {
-        props: ['post', 'containerClass', 'wrapperClass', 'likePhotoPath', 'username'],
-        emits: ["change-class", "change-like", "delete-post"],
-        methods: {
-            getImgUrl,
+    props: ['post', 'containerClass', 'wrapperClass', 'showLikes', 'username', 'liked'],
+    emits: ["change-class", "change-like", "delete-post", 'change-show-likes', 'comment-post'],
+    methods: {
+        getImgUrl,
+    },
+    data(){
+        return {
+            comment: '',
         }
-    }
+    },
+    components: { PopupUserlist }
+}
 
 </script>
 
@@ -14,26 +21,49 @@
 
     <div :class="containerClass">
         <div :class="wrapperClass">
-            <img v-if="wrapperClass == 'post-popup'" @click="this.$emit('changeClass')" class="exit" src="@/assets/close.png" style="width: 30px; height: 30px;">
+            <img v-if="wrapperClass" type="button" @click="this.$emit('change-class')" class="exit" src="@/assets/buttons/close.png" style="width: 30px; height: 30px;">
             <div class="post-header">
                 <img class="author-img" :src="this.getImgUrl('profile_pics/' + post.Author + '.png')">
-                <router-link :to="{ name: 'profile', params: {username: post.Author }}">
+                <router-link @click="wrapperClass ? this.$emit('change-class') : null" :to="{ name: 'profile', params: {username: post.Author }}">
                     {{ post.Author }}
                 </router-link>
                 <span> {{ post.CreationDatetime }}</span>
-                <img title="Delete post" @click="this.$emit('delete-post')" class="delete-post" v-if="post.Author == username && containerClass == 'post-container'" src="@/assets/x-red.png" >
+                <img title="Delete post" @click="this.$emit('delete-post')" class="delete-icon" v-if="post.Author == username && containerClass == 'post-container'" src="@/assets/buttons/x-red.png" >
             </div>
             <div class="post-body">
-                <img class="post-image" @click="this.$emit('change-class')" :src="this.getImgUrl(post.Photo)">
+                <img class="post-image" type=button @click="this.$emit('change-class')" :src="this.getImgUrl(post.Photo)">
                 <div class="post-like">
-                        Likes: {{ post.Likes ? post.Likes.length : 0 }}
-                        <img @click="this.$emit('change-like')" :src="likePhotoPath">
-                </div> 
+                    <PopupUserlist
+                        category="Likes"
+                        headertxt="Likes"
+                        username=""
+                        :show="showLikes"
+                        :list="post.Likes ? post.Likes : []"
+                        @change-show="this.$emit('change-show-likes')"
+                        style="font-size: 18px;"
+                    ></PopupUserlist>
+                </div>
+                <img class="like-icon" v-if="liked" type="button" @click="this.$emit('change-like')" src="@/assets/buttons/liked.png">
+                <img class="like-icon" v-else type="button" @click="this.$emit('change-like')" src="@/assets/buttons/unliked.png">
+                <div class="comments-title" style="margin-left: 5px" @click="this.$emit('change-class')"> Comments: </div> {{ post.Comments ? post.Comments.length : 0 }}
                 <div>
-                    <span class="post-body-title"> {{ post.Author }}: </span>
+                    <router-link @click="this.$emit('change-class')" :to="{ name: 'profile', params: {username: post.Author }}"> <span class="post-body-title"> {{ post.Author }}: </span> </router-link>
                     <span class="post-body-description"> {{ post.Description }} </span> 
                 </div>
             </div> 
+            <br>
+            <div v-if="this.containerClass == 'post-overlay'">
+                <span class="comments-title"> Comments </span>
+                <textarea v-model="comment" style="display: block; border-radius: 10px; width: 50%; height: 75px" placeholder="Write a comment!" @keyup.enter="this.$emit('comment-post', comment); this.comment=''"></textarea>
+                <span style="display: block" v-for="comment, key in post.Comments" :key="key">
+                    <router-link :to="{ name: 'profile', params: {username: comment.Author }}"> 
+                        <span class="post-body-title"> {{ comment.Author }}</span>:
+                    </router-link>
+                    <span class="post-body-description"> {{ comment.Body }} </span> 
+                    <span><img title="Delete comment" @click="this.$emit('delete-comment', comment.CommentID)" style="border-radius: 15px; width: 24px; height: 24px; float: right" v-if="comment.Author == username"  src="@/assets/buttons/x-red.png"></span>
+                    <span style="float: right"> {{ comment.CreationDatetime}} </span>
+                </span>
+            </div>
         </div>
     </div>
 
@@ -47,9 +77,13 @@
     border: 2px solid black;
     border-radius: 15px;
     background: radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%);
+    overflow: hidden;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
 }
 
-.post-header a {
+a {
     font-size: 18px;
     text-decoration: none;
     color: black
@@ -59,7 +93,7 @@
     position: relative
 }
 
-.post-header a:hover {
+a:hover {
     font-weight: bold;
 }
 
@@ -70,7 +104,7 @@
     height: 24px;
 }
 
-.post-header .delete-post {
+.delete-icon {
     border-radius: 15px;
     width: 24px; 
     height: 24px;
@@ -89,6 +123,10 @@
     font-size: 15px;
 }
 
+.post-body-title:hover {
+    font-size: 18px;
+}
+
 .post-body-description{
     font-size: 15px;
 }
@@ -100,7 +138,7 @@
     width: auto; 
     height: auto;
     border-radius: 15px;
-    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    box-shadow: rgba(0, 0, 0, 0.35) 15px 5px 0px;
 }
 
 .post-popup .post-image {
@@ -113,45 +151,62 @@
 }
 
 .post-like {
-    padding-top: 1%;
+    display: inline-block;
+    padding-top: 2%;
     font-size: 18px;
 }
 
-.post-like img {
+.like-icon {
     width: 24px;
     height: 24px;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    margin-left: 5px
 }
 
-.post-like img:hover {
-    border: 1px solid black;
+.like-icon:hover {
+    width: 28px;
+    height: 28px;
 }
 
 .post-overlay {
-
-position: fixed;
-top: 0;
-bottom: 0;
-left: 0;
-right: 0;
-background: black;
-overflow:auto;
-visibility: visible;
-opacity: 1;
-z-index: 1;
-  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: black;
+    overflow:auto;
+    z-index: 1;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
 }
 
 .post-popup {
+    padding: 20px;
+    background: #fff;
+    border-radius: 5px;
+    width: 40%;
+    position: relative;
+    background: radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%);
+}
 
-margin: 70px auto;
-padding: 20px;
-background: #fff;
-border-radius: 5px;
-width: 40%;
-position: relative;
-background: radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%);
+.comments-title {
+    font-weight: bold;
+    font-size: 18px;
+    display: inline-block
+}
 
+.exit {
+    border-radius: 25px;
+    width: 32px;
+    height: 32px;
+    position: absolute;
+    top: 0;
+    right: 0;
 }
 
 </style>

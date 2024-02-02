@@ -113,12 +113,13 @@ components:
           pattern: ''
         likers:
           $ref: '#/components/schemas/UserList'
+        comments:
+          $ref: '#/components/schemas/CommentList'
 
     PostsStream:
       title: Stream
       description: |-
         Stream of posts.
-        Only 16 posts are returned at each request.
       type: array
       items:
         $ref: '#/components/schemas/Post'
@@ -453,6 +454,7 @@ paths:
                 photo:
                   description: Image to be uploaded
                   type: string
+                  format: binary
                   minLength: 0
                   maxLength: 16000 # 16 Mb
                   pattern: '^.*$'
@@ -813,8 +815,12 @@ paths:
               maxLength: 128
               pattern: ''
       responses:
-        '204': # OK Created
+        '201': # OK Created
           description: User 'commenter_username' successfully commented 'username's photo.
+          content:
+              application/json:
+                schema: 
+                  $ref: '#/components/schemas/Comment'
         '400': # Bad request
           description: Bad request provided.
           content:

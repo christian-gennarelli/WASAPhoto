@@ -19,10 +19,12 @@
                     followings: [],
                     banned: [],
                 },
-                user: {
-                    ID: localStorage.getItem('ID'),
-                    Username: localStorage.getItem('Username'),
-                    followings: [],
+                user: { // User info
+                    ID: '',
+                    Username: '',
+                    Name: '',
+                    Birthdate: '',
+                    ProfilePic: '',
                 },
                 newUsername: '',
                 loading: true,
@@ -31,6 +33,9 @@
                 showFollowers: false,
                 showFollowings: false,
                 showBanned: false,
+                showUpload: false,
+                description: '',
+                photo: '',
             }
         },
         methods: {
@@ -69,7 +74,7 @@
                 ).catch(()=>{
                     alert(e.response.data.ErrorCode + " " + e.response.data.Description)
                 })
-                this.visitedProfile.followers.push(this.user)
+                this.visitedProfile.followers.unshift(this.user)
                 this.followed = !this.followed 
             },
             unfollowUser(){
@@ -117,20 +122,37 @@
                 })
                 this.visitedProfile.banned = this.visitedProfile.banned.filter(u => u.Username !== bannedUsername)
             },
+            uploadPhoto(){
+                const formData = new FormData();
+                formData.append('photo', this.photo);
+                formData.append('description', this.description)
+                this.$axios.post(
+                    '/users/' + this.user.Username + '/profile/posts/',
+                    formData,
+                    {
+                        headers: {
+                            'Authorization': this.user.ID,
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }
+                ).then((res)=>{
+                    this.visitedProfile.posts ? this.visitedProfile.posts.unshift(res.data) : this.visitedProfile.posts = [res.data]
+                }).catch((e)=>{
+                    alert(e.response.data.ErrorCode + " " + e.response.data.Description)
+                })
+                this.showUpload = false
+            },
             async getVisitedProfile(){
                 // GetUserProfile (visited user)
                 await this.$axios.get(
                     "/users/" + this.$route.params.username + "/profile/",
                     {
                         headers: {
-                            'Authorization': this.user.ID   
+                            'Authorization': this.user.ID
                         },
                     }
                 ).then((res) => {
-                    this.visitedProfile.user.Username = res.data.User.Username
-                    this.visitedProfile.user.Name = res.data.User.Name
-                    this.visitedProfile.user.Birthdate = res.data.User.Birthdate
-                    this.visitedProfile.user.ProfilePic = res.data.User.ProfilePic
+                    this.visitedProfile.user = res.data.User
                     this.visitedProfile.followings = res.data.Followings ? res.data.Followings : []
                     this.visitedProfile.followers = res.data.Followers ? res.data.Followers : []
                     this.visitedProfile.banned = res.data.Banned ? res.data.Banned : []
@@ -145,7 +167,7 @@
                     "/users/" + this.user.Username + "/followings/",
                     {
                         headers: {  
-                            'Authorization': localStorage.getItem('ID')
+                            'Authorization': this.user.ID
                         }
                     }
                 ).then((res)=>{
@@ -178,6 +200,11 @@
             }
         },
         async created() { 
+            this.user.Username = localStorage.getItem('Username')
+            this.user.ID = localStorage.getItem('ID')
+            this.user.ProfilePic = localStorage.getItem('ProfilePic')
+            this.user.Birthdate = localStorage.getItem('Birthdate')
+            this.user.Name = localStorage.getItem('Name')
             this.getVisitedProfile()
         },
         components:{
@@ -196,17 +223,15 @@
                 <input type="textbox" v-model="newUsername" @keyup.enter="updateUsername" placeholder="Enter new username">
                 <!-- <span> Remember: username can contain only lower/upper case letters, underscores (_) and dashes (-). </span> -->
             </span>
-            <img class="pencil" src="@/assets/pencil.png" v-if="this.visitedProfile.user.Username === this.user.Username" @click="this.modifying=!this.modifying">
-            <button v-if="followed" class="btn-red" button @click="unfollowUser"> Unfollow </button>
-            <button v-else-if="this.visitedProfile.user.Username !== this.user.Username" class="btn-green" @click="followUser"> Follow </button>
-            <button v-if="this.visitedProfile.user.Username !== this.user.Username" class="btn-red" @click="banUser"> Ban </button>
+            <img class="pencil" src="@/assets/buttons/pencil.png" v-if="this.visitedProfile.user.Username === this.user.Username" type="button" @click="this.modifying=!this.modifying">
+            <button v-if="followed" class="left-btn btn-red" button @click="unfollowUser"> Unfollow </button>
+            <button v-else-if="this.visitedProfile.user.Username !== this.user.Username" class="left-btn btn-green" @click="followUser"> Follow </button>
+            <button v-if="this.visitedProfile.user.Username !== this.user.Username" class="left-btn btn-red" @click="banUser"> Ban </button>
         </div>
 
-        <div class="right"> 
+        <div class="right" :style="[this.visitedProfile.user.Username !== this.user.Username ? {'grid-template-columns': '1fr 1fr 1fr'} : {'': ''} ]"> 
             <PopupUserlist
                 category="Followers"
-                headertxt="Users following "
-                :username="this.visitedProfile.user.Username"
                 :show="this.showFollowers"
                 :list="this.visitedProfile.followers"
                 @change-show="this.showFollowers=!this.showFollowers; this.showFollowings=false; this.showBanned=false"
@@ -214,8 +239,6 @@
             </PopupUserlist>
             <PopupUserlist
                 category="Followings"
-                headertxt="Users followed by "
-                :username="this.visitedProfile.user.Username"
                 :show="this.showFollowings"
                 :list="this.visitedProfile.followings"
                 @change-show="this.showFollowings=!this.showFollowings; this.showFollowers=false; this.showBanned=false"
@@ -223,14 +246,24 @@
             </PopupUserlist>
             <PopupUserlist
                 category="Banned"
-                headertxt="Users banned by "
-                :username="this.visitedProfile.user.Username"
                 :show="this.showBanned"
                 :list="this.visitedProfile.banned"
                 @change-show="this.showBanned=!this.showBanned; this.showFollowers=false; this.showFollowings=false"
                 @unban-user="(bannedUsername) => unbanUser(bannedUsername)"
+                @remove-comment="(commentID) => this.visitedProfile.posts[key].Comments = this.visitedProfile.posts[key].Comments.filter(c => c.CommentID != commentID)"
             >
             </PopupUserlist>
+            <button v-if="this.visitedProfile.user.Username == this.user.Username" @click="this.showUpload=true"> Upload new post </button>
+            <div v-if="showUpload" class="upload-overlay">
+                <div class="upload-popup">
+                    <img type="button" @click="this.showUpload=false" class="exit" src="@/assets/buttons/close.png">
+                    <span style="display: block; font-size: 20px; font-weight: bold;"> Photo </span>
+                    <input type="file" name="img" accept=".png, .jpeg" ref="file" @change="this.photo=this.$refs.file.files[0]">
+                    <span style="display: block; font-size: 20px; font-weight: bold;"> Description </span>
+                    <textarea v-model="description" style="display: block; width: 300px; height: 100px" maxlength="128"></textarea>
+                    <button style="margin-top: 1%" @click="uploadPhoto"> Upload! </button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -240,9 +273,11 @@
             v-for="(post, key) in visitedProfile.posts" 
             :post="post"
             :user="user"
-            @add-like="this.visitedProfile.posts[key].Likes ? this.visitedProfile.posts[key].Likes.push(this.user) : this.visitedProfile.posts[key].Likes = [user]"
+            @add-like="this.visitedProfile.posts[key].Likes ? this.visitedProfile.posts[key].Likes.unshift(this.user) : this.visitedProfile.posts[key].Likes = [user]"
             @remove-like="this.visitedProfile.posts[key].Likes = this.visitedProfile.posts[key].Likes.filter(u => u.Username !== this.user.Username)"
             @remove-post="this.visitedProfile.posts.splice(key, 1)"
+            @add-comment="(comment) => this.visitedProfile.posts[key].Comments ? this.visitedProfile.posts[key].Comments.unshift(comment) : this.visitedProfile.posts[key].Comments = [comment]"
+            @remove-comment="(commentID) => this.visitedProfile.posts[key].Comments = this.visitedProfile.posts[key].Comments.filter(c => c.CommentID != commentID)"
         ></Post>
     </div>
 </template>
@@ -250,21 +285,21 @@
 <style>
 
 .profile-container {
-    border: 2px solid black;
     margin: 15px;
     border-radius: 15px;
+    border: 2px solid black;
     display: grid;
-    grid-template-columns: 50% 50%;
+    grid-template-columns: 1fr 2fr;
     height: 120px;
+    background: radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%);
 }
 
 .left {
     display: flex;
-    justify-content: center;
     align-items: center;
 }
 
-.left button {
+.left-btn {
     border: 2px solid black;
     background-color: transparent;
     font-size: 30px;
@@ -272,11 +307,11 @@
     margin-right: 2px;
 }
 
-.left .btn-red:hover {
+.btn-red:hover {
     background: linear-gradient(108.4deg, rgb(253, 44, 56) 3.3%, rgb(176, 2, 12) 98.4%);
 }
 
-.left .btn-green:hover {
+.btn-green:hover {
     background: linear-gradient(to right, rgb(182, 244, 146), rgb(51, 139, 147));
 }
 
@@ -301,8 +336,61 @@
     margin-left: 15px;
 }
 
-.left .pencil:hover {
-    cursor: pointer;
+.right {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-rows: 1fr;
+    align-items: center;
+    justify-items: center;
+}
+
+.right button {
+    background-color: transparent;
+    border: 1px solid black;
+    box-shadow: 2px 2px 2px;
+    width: 83%;
+}
+
+.right button:hover {
+    color: green
+}
+
+
+.upload-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: black;
+    overflow:auto;
+    z-index: 1;
+
+}
+
+.upload-popup {
+
+    padding: 20px;
+    background: #fff;
+    border-radius: 5px;
+    width: auto;
+    min-width: 400px;
+    position: relative;
+    background: radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%);
+    z-index: 1;
+
+}
+
+.exit {
+    border-radius: 25px;
+    width: 32px;
+    height: 32px;
+    position: absolute;
+    top: 0;
+    right: 0;
 }
 
 </style>

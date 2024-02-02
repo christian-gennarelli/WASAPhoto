@@ -9,7 +9,8 @@
                     ProfilePic: '',
                 },
                 searchedUsername: '',
-                loading: true
+                loading: true,
+                showUpload: false,
             }
         },
         methods: {
@@ -29,19 +30,25 @@
     <div class="header-grid-container">
 
 
-        <div class="header-left" @click="this.$router.push('/home')"> 
-            <span> WASAPhoto </span>
+        <div class="header-left" type="button" @click="this.$router.push('/home')"> 
+            <span class="title"> WASAPhoto </span>
         </div>
 
 
         <div class="header-center">
-            <input v-model="searchedUsername" @keyup.enter="this.$router.push({name: 'profile', params: {username: searchedUsername}}); searchedUsername=''" type="textbox" placeholder="Cerca qui...">
+            <input style="border-radius: 10px;" v-model="searchedUsername" @keyup.enter="this.$router.push({name: 'profile', params: {username: searchedUsername}}); searchedUsername=''" type="textbox" placeholder="Cerca qui...">
         </div>
 
 
         <div class="header-right"> 
             <router-link :to="{ name: 'profile', params: {username: user.Username} }"> <img :src="this.getImgUrl(user.ProfilePic)">{{user.Username}}</router-link> 
-            <span @click="logout"> Logout </span>
+            <span type="button" @click="logout"> Logout </span>
+        </div>
+
+        <div v-if="showUpload" class="upload-overlay">
+            <div class="upload-popup">
+
+            </div>
         </div>
 
     </div>
@@ -56,30 +63,22 @@
     border-radius: 10px;
     margin: 15px;
     display: grid;
-    grid-template-columns: 34fr 33fr 33fr;
-    background: radial-gradient(circle at 10% 20%, rgb(238, 56, 56) 0%, rgba(206, 21, 0, 0.92) 90.1%);
+    grid-template-columns: 1fr 1fr 1fr;
+    /* background: radial-gradient(circle at 10% 20%, rgb(238, 56, 56) 0%, rgba(206, 21, 0, 0.92) 90.1%); */
+    background: radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%);
 }
 
 .header-left{
     margin: auto 10px;
 }
 
-.header-left span {  
+.header-left .title {  
     font-size: 50px;
-    font-style: bold;
-}
-
-.header-left span:hover {
-    text-decoration: underline;
-    text-decoration-thickness: 4px;
+    font-weight: bold;
 }
 
 .header-center {
     margin: auto auto;
-}
-
-.header-center input {
-    border-radius: 10px;
 }
 
 .header-right{
@@ -97,7 +96,7 @@
 }
 
 .header-right a:hover {
-    text-decoration: underline;
+    font-size: 24px
 }
 
 .header-right img {
@@ -110,11 +109,7 @@
 .header-right span {
     font-size: 20px;
     font-style: italic;
+    margin-left: 5px;
 }
-
-.header-right span:hover {
-    cursor: pointer;
-}
-
 
 </style>

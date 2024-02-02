@@ -26,6 +26,7 @@
                     }
                 ).then((res) => {
                     this.posts = res.data 
+                    console.log(this.posts)
                 }).catch((e) => {
                     alert(e.response.data.ErrorCode + " " + e.response.data.Description)
                 })
@@ -61,9 +62,11 @@
                 v-for="(post, key) in posts" 
                 :post="post" 
                 :user="user"
-                @add-like="this.posts[key].Likes ? this.posts[key].Likes.push(this.user) :  this.posts[key].Likes = [user]"
+                @add-like="this.posts[key].Likes ? this.posts[key].Likes.unshift(this.user) : this.posts[key].Likes = [this.user]"
                 @remove-like="this.posts[key].Likes = this.posts[key].Likes.filter(u => u.Username !== this.user.Username)"
                 @remove-post="this.posts.splice(key, 1)"
+                @add-comment="(comment) => this.posts[key].Comments ? this.posts[key].Comments.unshift(comment) : this.posts[key].Comments = [comment]"
+                @remove-comment="(commentID) => this.posts[key].Comments = this.posts[key].Comments.filter(c => c.CommentID != commentID)"
             ></Post>
         </div>
     </div>
