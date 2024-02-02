@@ -22,25 +22,6 @@ func (rt _router) getPhotoFromURL(w http.ResponseWriter, r *http.Request, ps htt
 
 	// Retrieve the path of the photo
 	path := r.URL.Query().Get("photo_path")
-	// regex, err := regexp.Compile("(profile_pics/[a-zA-Z][a-zA-Z_]{7,14}[a-zA-Z]_[0-9]+.png)|(posts/[a-zA-Z][a-zA-Z_]{7,14}[a-zA-Z]_[0-9].png)")
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	ctx.Logger.WithError(err).Error("error while checking if the path is valid")
-	// 	if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the path is valid").Error())); err != nil {
-	// 		ctx.Logger.WithError(err).Error("error while writing the response")
-	// 	}
-	// 	return
-	// }
-
-	// // Check if the path is valid
-	// if !regex.MatchString(path) {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	ctx.Logger.Error("provided path not valid")
-	// 	if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "provided path not valid").Error())); err != nil {
-	// 		ctx.Logger.WithError(err).Error("error while writing the response")
-	// 	}
-	// 	return
-	// }
 
 	// Open the image
 	img, err := os.Open("photos/" + path)

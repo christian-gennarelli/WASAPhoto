@@ -72,9 +72,9 @@ func (rt _router) getFollowingList(w http.ResponseWriter, r *http.Request, ps ht
 		return
 	}
 
-	if len(users.Users) > 0 {
+	if len(*users) > 0 {
 		w.WriteHeader(http.StatusOK)
-		response, err := json.MarshalIndent(users.Users, "", " ")
+		response, err := json.MarshalIndent(*users, "", " ")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error(("error while encoding the response as JSON"))
@@ -341,9 +341,9 @@ func (rt _router) getFollowersList(w http.ResponseWriter, r *http.Request, ps ht
 		return
 	}
 
-	if len(users.Users) > 0 {
+	if len(*users) > 0 {
 		w.WriteHeader(http.StatusOK)
-		response, err := json.MarshalIndent(users.Users, "", " ")
+		response, err := json.MarshalIndent(*users, "", " ")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error(("error while encoding the response as JSON"))

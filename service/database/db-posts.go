@@ -66,22 +66,35 @@ func (db appdbimpl) RemoveLikeFromPost(Username string, PostID string) error {
 
 }
 
-func (db appdbimpl) AddCommentToPost(PostID string, Body string, Author string) error {
+func (db appdbimpl) AddCommentToPost(PostID string, Body string, Author string) (*components.Comment, error) {
 
-	stmt, err := db.c.Prepare("INSERT INTO Comment (PostID, Author, CreationDatetime, Comment) VALUES (?, ?, ?, ?)")
+	stmt, err := db.c.Prepare("INSERT INTO Comment (PostID, Author, CreationDatetime, Comment) VALUES (?, ?, ?, ?) RETURNING CommentID")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer stmt.Close()
 
 	t := time.Now()
 	CreationDatetime := strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + " " + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute()) + ":" + strconv.Itoa(t.Second())
 
-	if _, err = stmt.Exec(PostID, Author, CreationDatetime, Body); err != nil {
-		return err
+	var CommentID int
+	row := stmt.QueryRow(PostID, Author, CreationDatetime, Body)
+
+	if err = row.Scan(&CommentID); err != nil {
+		return nil, err
 	}
 
-	return nil
+	if err := row.Err(); err != nil {
+		return nil, err
+	}
+
+	return &components.Comment{
+		CommentID:        strconv.Itoa(CommentID),
+		Body:             Body,
+		CreationDatetime: CreationDatetime,
+		Author:           Author,
+		PostID:           PostID,
+	}, nil
 
 }
 
@@ -101,7 +114,7 @@ func (db appdbimpl) RemoveCommentFromPost(PostID string, CommentID string) error
 
 }
 
-func (db appdbimpl) GetUserStream(username string) (*components.Stream, error) {
+func (db appdbimpl) GetUserStream(username string) (*[]components.Post, error) {
 
 	stmt, err := db.c.Prepare(`SELECT 
 									P.PostID, 
@@ -121,7 +134,7 @@ func (db appdbimpl) GetUserStream(username string) (*components.Stream, error) {
 	}
 	defer rows.Close()
 
-	var postStream components.Stream
+	var postStream []components.Post
 	for rows.Next() {
 		var post components.Post
 		if err := rows.Scan(&post.PostID, &post.Author, &post.CreationDatetime, &post.Description, &post.Photo); err != nil {
@@ -132,9 +145,15 @@ func (db appdbimpl) GetUserStream(username string) (*components.Stream, error) {
 		if err != nil {
 			return nil, err
 		}
-		post.Likes = likers.Users
+		post.Likes = *likers
 
-		postStream.Posts = append(postStream.Posts, post)
+		comments, err := db.GetPostComments(post.PostID)
+		if err != nil {
+			return nil, err
+		}
+		post.Comments = *comments
+
+		postStream = append(postStream, post)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -200,9 +219,9 @@ func (db appdbimpl) DeletePost(postID string) (*string, error) {
 
 }
 
-func (db appdbimpl) GetPostComments(postID string) (*components.CommentList, error) {
+func (db appdbimpl) GetPostComments(postID string) (*[]components.Comment, error) {
 
-	stmt, err := db.c.Prepare("SELECT * FROM Comment WHERE PostID = ? ORDER BY L.CreationDatetime DESC")
+	stmt, err := db.c.Prepare("SELECT * FROM Comment WHERE PostID = ? ORDER BY CreationDatetime DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -214,13 +233,13 @@ func (db appdbimpl) GetPostComments(postID string) (*components.CommentList, err
 	}
 	defer rows.Close()
 
-	var commentList components.CommentList
+	var commentList []components.Comment
 	for rows.Next() {
 		var comment components.Comment
 		if err := rows.Scan(&comment.CommentID, &comment.PostID, &comment.Author, &comment.CreationDatetime, &comment.Body); err != nil {
 			return nil, err
 		}
-		commentList.Comments = append(commentList.Comments, comment)
+		commentList = append(commentList, comment)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -231,7 +250,7 @@ func (db appdbimpl) GetPostComments(postID string) (*components.CommentList, err
 
 }
 
-func (db appdbimpl) GetPostLikes(postID string) (*components.UserList, error) {
+func (db appdbimpl) GetPostLikes(postID string) (*[]components.User, error) {
 
 	stmt, err := db.c.Prepare("SELECT U.Username, U.ProfilePicPath, COALESCE('', U.Birthdate), COALESCE('', U.Name) FROM User U JOIN Like L ON L.Liker = U.Username WHERE L.PostID = ? ORDER BY L.CreationDatetime DESC")
 	if err != nil {
@@ -245,13 +264,13 @@ func (db appdbimpl) GetPostLikes(postID string) (*components.UserList, error) {
 	}
 	defer rows.Close()
 
-	var userList components.UserList
+	var userList []components.User
 	for rows.Next() {
 		var user components.User
 		if err := rows.Scan(&user.Username, &user.ProfilePic, &user.Birthdate, &user.Name); err != nil {
 			return nil, err
 		}
-		userList.Users = append(userList.Users, user)
+		userList = append(userList, user)
 	}
 
 	if err := rows.Err(); err != nil {

@@ -1,13 +1,9 @@
 package database
 
 import (
-	"bufio"
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"fmt"
-	"io"
-	"os"
 	"os/exec"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
@@ -63,66 +59,6 @@ func (db appdbimpl) PostUserID(Username string) (*components.User, error) {
 	}
 
 	return &user, nil
-}
-
-func (db appdbimpl) SearchUser(Username string) (*components.UserList, error) {
-
-	// Prepare the SQL statement for finding all the users with "Value" as substring
-	stmt, err := db.c.Prepare("SELECT Username, COALESCE(Birthdate, ''), ProfilePicPath, COALESCE(Name, '') FROM User WHERE Username LIKE '%'||?||'%' ")
-	if err != nil {
-		return nil, fmt.Errorf("error while preparing the SQL statement to obtain the list of users with the provided string as substring")
-	}
-	defer stmt.Close()
-
-	// Bind the parameters and execute the statement
-	rows, err := stmt.Query(Username)
-	if err != nil {
-		return nil, fmt.Errorf("error while performing the query to obtain the list of users with the provided string as substring")
-	}
-	defer rows.Close()
-
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	// Instantiate the data structure that will hold the list of usernames
-	var ulist components.UserList
-
-	// Loop over the rows, and store each user id in the previously instantiated data structure
-	for rows.Next() {
-
-		// Retrieve the next username
-		var user components.User
-		if err = rows.Scan(&user.Username, &user.Birthdate, &user.ProfilePic, &user.Name); err != nil {
-			return nil, fmt.Errorf("error while extracting the username from the query")
-		}
-
-		//Open the image
-		img, err := os.Open(user.ProfilePic)
-		if err != nil {
-			return nil, err
-		}
-		reader := bufio.NewReader(img)
-		// Read it
-		content, err := io.ReadAll(reader)
-		if err != nil {
-			return nil, err
-		}
-		// Convert it in base64
-		user.ProfilePic = base64.StdEncoding.EncodeToString(content)
-
-		// Insert into the returned list of usernames
-		ulist.Users = append(ulist.Users, user)
-
-		if err = rows.Err(); err != nil {
-			return nil, err
-		}
-
-	}
-
-	// Return the list of users
-	return &ulist, nil
-
 }
 
 func (db appdbimpl) UpdateUsername(NewUsername string, OldUsername string) error {

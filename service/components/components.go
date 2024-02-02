@@ -22,10 +22,6 @@ type Profile struct {
 	Banned     []User
 }
 
-type UserList struct {
-	Users []User
-}
-
 type Post struct {
 	PostID           string
 	Author           string
@@ -33,10 +29,7 @@ type Post struct {
 	CreationDatetime string
 	Description      string
 	Likes            []User
-}
-
-type Stream struct {
-	Posts []Post
+	Comments         []Comment
 }
 
 type Comment struct {
@@ -45,10 +38,6 @@ type Comment struct {
 	Body             string
 	CreationDatetime string
 	Author           string
-}
-
-type CommentList struct {
-	Comments []Comment
 }
 
 type Error struct {

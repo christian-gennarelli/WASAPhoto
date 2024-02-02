@@ -50,34 +50,33 @@ type AppDatabase interface {
 	GetUsernameByToken(Id string) (*string, error)
 	GetOwnerUsernameOfComment(CommentID string) (*string, error)
 	PostUserID(Username string) (*components.User, error)
-	SearchUser(Username string) (*components.UserList, error)
 	UpdateUsername(NewUsername string, OldUsername string) error
 
 	// Post queries
 	CheckIfOwnerPost(Username string, PostID string) error
 	AddLikeToPost(Username string, PostID string) error
 	RemoveLikeFromPost(Username string, PostID string) error
-	AddCommentToPost(PostID string, Body string, Author string) error
+	AddCommentToPost(PostID string, Body string, Author string) (*components.Comment, error)
 	RemoveCommentFromPost(PostID string, CommentID string) error
-	GetUserStream(username string) (*components.Stream, error)
+	GetUserStream(username string) (*[]components.Post, error)
 	UploadPost(username string, description string) (*components.Post, error)
 	DeletePost(postID string) (*string, error)
-	GetPostComments(postID string) (*components.CommentList, error)
-	GetPostLikes(postID string) (*components.UserList, error)
+	GetPostComments(postID string) (*[]components.Comment, error)
+	GetPostLikes(postID string) (*[]components.User, error)
 
 	// Profile queries
 	GetUserProfile(Username string) (*components.Profile, error)
 
 	// Follow queries
-	GetFollowingList(followingUsername string) (*components.UserList, error)
-	GetFollowersList(followedUsername string) (*components.UserList, error)
+	GetFollowingList(followingUsername string) (*[]components.User, error)
+	GetFollowersList(followedUsername string) (*[]components.User, error)
 	FollowUser(followerUsername string, followingUsername string) error
 	UnfollowUser(followerUsername string, followingUsername string) error
 
 	// Ban queries
 	BanUser(bannerUsername, bannedUsername string) error
 	UnbanUser(bannerUsername, bannedUsername string) error
-	GetBanUserList(bannerUsername string) (*components.UserList, error)
+	GetBanUserList(bannerUsername string) (*[]components.User, error)
 	CheckIfBanned(bannerUsername string, bannedUsername string) error
 }
 

@@ -9,7 +9,7 @@ import (
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
 )
 
-func (db appdbimpl) GetFollowersList(followedUsername string) (*components.UserList, error) {
+func (db appdbimpl) GetFollowersList(followedUsername string) (*[]components.User, error) {
 
 	stmt, err := db.c.Prepare("SELECT U.Username, COALESCE('', U.Birthdate), U.ProfilePicPath,  COALESCE('', U.Name) FROM Follow F JOIN User U ON F.Follower = U.Username WHERE F.Followed = ? ORDER BY F.CreationDatetime DESC")
 	if err != nil {
@@ -23,7 +23,7 @@ func (db appdbimpl) GetFollowersList(followedUsername string) (*components.UserL
 	}
 	defer rows.Close()
 
-	var userList components.UserList
+	var userList []components.User
 	for rows.Next() {
 		var user components.User
 		err = rows.Scan(&user.Username, &user.Birthdate, &user.ProfilePic, &user.Name)
@@ -31,7 +31,7 @@ func (db appdbimpl) GetFollowersList(followedUsername string) (*components.UserL
 			return nil, err
 		}
 
-		userList.Users = append(userList.Users, user)
+		userList = append(userList, user)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -42,7 +42,7 @@ func (db appdbimpl) GetFollowersList(followedUsername string) (*components.UserL
 
 }
 
-func (db appdbimpl) GetFollowingList(followerUsername string) (*components.UserList, error) {
+func (db appdbimpl) GetFollowingList(followerUsername string) (*[]components.User, error) {
 
 	stmt, err := db.c.Prepare("SELECT U.Username, COALESCE(U.Birthdate, ''), U.ProfilePicPath, COALESCE(U.Name, '') FROM Follow F JOIN User U ON F.Followed = U.Username WHERE F.Follower = ? ORDER BY F.CreationDatetime DESC")
 	if err != nil {
@@ -56,14 +56,14 @@ func (db appdbimpl) GetFollowingList(followerUsername string) (*components.UserL
 	}
 	defer rows.Close()
 
-	var userList components.UserList
+	var userList []components.User
 	for rows.Next() {
 		var user components.User
 		err = rows.Scan(&user.Username, &user.Birthdate, &user.ProfilePic, &user.Name)
 		if err != nil {
 			return nil, err
 		}
-		userList.Users = append(userList.Users, user)
+		userList = append(userList, user)
 	}
 
 	if err := rows.Err(); err != nil {

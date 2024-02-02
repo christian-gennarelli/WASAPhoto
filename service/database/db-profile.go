@@ -48,31 +48,18 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 		if err = rows.Scan(&post.PostID, &post.Author, &post.Description, &post.CreationDatetime, &post.Photo); err != nil {
 			return nil, err
 		}
-		// row, err := db.c.Query("SELECT U.Username, COALESCE(U.Birthdate, ''), COALESCE(U.Name, ''), U.ProfilePicPath FROM Like L JOIN User U ON U.Username = L.Liker WHERE L.PostID = ?", post.PostID)
-		// if err != nil {
-		// 	return nil, err
-		// }
-
-		// var likers []components.User
-		// for row.Next() {
-		// 	var user components.User
-		// 	if err = row.Scan(&user.Username, &user.Birthdate, &user.Name, &user.ProfilePic); err != nil {
-		// 		return nil, err
-		// 	}
-		// 	likers = append(likers, user)
-		// }
-
-		// if err := row.Err(); err != nil {
-		// 	return nil, err
-		// }
-
-		// post.Likes = likers
 
 		likers, err := db.GetPostLikes(post.PostID)
 		if err != nil {
 			return nil, err
 		}
-		post.Likes = likers.Users
+		post.Likes = *likers
+
+		comments, err := db.GetPostComments(post.PostID)
+		if err != nil {
+			return nil, err
+		}
+		post.Comments = *comments
 
 		posts = append(posts, post)
 	}
@@ -95,9 +82,9 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 	profile := components.Profile{
 		User:       user,
 		Posts:      posts,
-		Followings: followings.Users,
-		Followers:  followers.Users,
-		Banned:     banned.Users,
+		Followings: *followings,
+		Followers:  *followers,
+		Banned:     *banned,
 	}
 
 	if err := rows.Err(); err != nil {

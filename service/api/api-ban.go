@@ -60,9 +60,9 @@ func (rt _router) getBanUserList(w http.ResponseWriter, r *http.Request, ps http
 		return
 	}
 
-	if len(bannedUserList.Users) > 0 {
+	if len(*bannedUserList) > 0 {
 		w.WriteHeader(http.StatusOK)
-		response, err := json.MarshalIndent(bannedUserList.Users, "", " ")
+		response, err := json.MarshalIndent(*bannedUserList, "", " ")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error("error while encoding the response as JSON")

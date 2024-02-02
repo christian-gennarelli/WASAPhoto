@@ -69,7 +69,7 @@ func (db appdbimpl) UnbanUser(bannerUsername string, bannedUsername string) erro
 	return nil
 }
 
-func (db appdbimpl) GetBanUserList(bannerUsername string) (*components.UserList, error) {
+func (db appdbimpl) GetBanUserList(bannerUsername string) (*[]components.User, error) {
 
 	stmt, err := db.c.Prepare("SELECT U.Username, U.ProfilePicPath, COALESCE(U.Birthdate, ''), COALESCE(U.Name, '') FROM Ban B JOIN User U ON B.Banned = U.Username WHERE B.Banner = ? ORDER BY B.CreationDatetime DESC")
 	if err != nil {
@@ -83,14 +83,14 @@ func (db appdbimpl) GetBanUserList(bannerUsername string) (*components.UserList,
 	}
 	defer rows.Close()
 
-	var bannedUserList components.UserList
+	var bannedUserList []components.User
 	for rows.Next() {
 		var bannedUser components.User
 		if err = rows.Scan(&bannedUser.Username, &bannedUser.ProfilePic, &bannedUser.Birthdate, &bannedUser.Name); err != nil {
 			return nil, err
 		}
 
-		bannedUserList.Users = append(bannedUserList.Users, bannedUser)
+		bannedUserList = append(bannedUserList, bannedUser)
 	}
 
 	if err := rows.Err(); err != nil {

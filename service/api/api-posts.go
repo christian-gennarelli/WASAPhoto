@@ -201,7 +201,7 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	// Add the comment to the post
-	err = rt.db.AddCommentToPost(*postID, comment, *authUsername)
+	commentPost, err := rt.db.AddCommentToPost(*postID, comment, *authUsername)
 	if err != nil {
 		var mess []byte
 		// if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
@@ -220,7 +220,27 @@ func (rt _router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	// Encode the response as JSON
+	response, err := json.MarshalIndent(*commentPost, "", " ")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while encoding the response as JSON")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while encoding the response as JSON").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	// Send the response to the client, if not empty
+	w.WriteHeader(http.StatusAccepted)
+	if _, err = w.Write(response); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while writing the response")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while writing the response").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
 
 }
 
@@ -393,7 +413,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	ctx.Logger.Info("Width: " + strconv.FormatInt(int64(im.Width), 10))
 
 	// Check the size of the image: it must be 1024x1024 px
-	// if im.Height != 1080 || im.Width != 1080 {
+	// if im.Height != 1366 || im.Width != 768 {
 	// 	w.WriteHeader(http.StatusBadRequest)
 	// 	ctx.Logger.Error("photo does not satisfy size requirements: it must be 1024x1024 px")
 	// 	if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "photo does not satisfy size requirements: it must be 1024x1024 px").Error())); err != nil {
@@ -476,6 +496,26 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		}
 		if _, err := rt.db.DeletePost(post.PostID); err != nil {
 			ctx.Logger.WithError(err).Error("error while deleting the record just uploaded")
+		}
+		return
+	}
+
+	response, err := json.MarshalIndent(*post, "", " ")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while encoding the response")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while encoding the response").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	if _, err = w.Write(response); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ctx.Logger.WithError(err).Error("error while writing the response")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while writing the response").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
 	}
@@ -579,7 +619,7 @@ func (rt _router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Encode the response as JSON
-	response, err := json.MarshalIndent(postStream.Posts, "", " ")
+	response, err := json.MarshalIndent(*postStream, "", " ")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while encoding the response as JSON")
@@ -590,7 +630,7 @@ func (rt _router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Send the response to the client, if not empty
-	if len(postStream.Posts) > 0 {
+	if len(*postStream) > 0 {
 		w.WriteHeader(http.StatusOK)
 		if _, err = w.Write(response); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -657,9 +697,9 @@ func (rt _router) getPostComments(w http.ResponseWriter, r *http.Request, ps htt
 		return
 	}
 
-	if len(commentList.Comments) > 0 {
+	if len(*commentList) > 0 {
 		w.WriteHeader(http.StatusOK)
-		response, err := json.MarshalIndent(commentList.Comments, "", " ")
+		response, err := json.MarshalIndent(*commentList, "", " ")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error(("error while encoding the response as JSON"))
@@ -732,9 +772,9 @@ func (rt _router) getPostLikes(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
-	if len(userList.Users) > 0 {
+	if len(*userList) > 0 {
 		w.WriteHeader(http.StatusOK)
-		response, err := json.MarshalIndent(userList.Users, "", " ")
+		response, err := json.MarshalIndent(*userList, "", " ")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			ctx.Logger.WithError(err).Error(("error while encoding the response as JSON"))
