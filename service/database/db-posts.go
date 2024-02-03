@@ -122,7 +122,7 @@ func (db appdbimpl) GetUserStream(username string) (*[]components.Post, error) {
 									P.CreationDatetime, 
 									P.Description, 
 									P.PhotoPath
-							FROM Post P JOIN Follow F ON P.Author = F.Followed WHERE F.Follower = ? ORDER BY P.CreationDatetime DESC`)
+							FROM Post P JOIN Follow F ON P.Author = F.Followed WHERE F.Follower = ? ORDER BY P.PostID DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +221,7 @@ func (db appdbimpl) DeletePost(postID string) (*string, error) {
 
 func (db appdbimpl) GetPostComments(postID string) (*[]components.Comment, error) {
 
-	stmt, err := db.c.Prepare("SELECT * FROM Comment WHERE PostID = ? ORDER BY CreationDatetime DESC")
+	stmt, err := db.c.Prepare("SELECT * FROM Comment C WHERE PostID = ? ORDER BY CommentID DESC")
 	if err != nil {
 		return nil, err
 	}

@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"image"
+
 	_ "image/jpeg" // Blank import for accepting jpeg images with the image package
 	_ "image/png"  // Blank import for accepting png images with the image package
 	"io"
 	"net/http"
 	"os"
-	"strconv"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/components"
@@ -330,6 +330,8 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 10*1024*1024)
+
 	// Retrieve the post from the request body
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -392,7 +394,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
-	im, _, err := image.DecodeConfig(fileReader)
+	conf, _, err := image.DecodeConfig(fileReader)
 	if err != nil {
 		if errors.Is(err, image.ErrFormat) { // err.Error() == "image: unknown format"
 			w.WriteHeader(http.StatusBadRequest)
@@ -409,18 +411,18 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		}
 		return
 	}
-	ctx.Logger.Info("Height:" + strconv.FormatInt(int64(im.Height), 10))
-	ctx.Logger.Info("Width: " + strconv.FormatInt(int64(im.Width), 10))
+	// ctx.Logger.Info("Height:" + strconv.FormatInt(int64(conf.Height), 10))
+	// ctx.Logger.Info("Width: " + strconv.FormatInt(int64(conf.Width), 10))
 
-	// Check the size of the image: it must be 1024x1024 px
-	// if im.Height != 1366 || im.Width != 768 {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	ctx.Logger.Error("photo does not satisfy size requirements: it must be 1024x1024 px")
-	// 	if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "photo does not satisfy size requirements: it must be 1024x1024 px").Error())); err != nil {
-	// 		ctx.Logger.WithError(err).Error("error while writing the response")
-	// 	}
-	// 	return
-	// }
+	// Check the size of the image: it must be 16:9
+	if conf.Width/conf.Height != 16/9 {
+		w.WriteHeader(http.StatusBadRequest)
+		ctx.Logger.Error("photo does not satisfy size requirements: it must be 16:9")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "photo does not satisfy size requirements: it must be 16:9").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
 
 	// Accessing the description field
 	rawDescription := formData.Value["description"]
