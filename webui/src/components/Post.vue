@@ -11,8 +11,12 @@ import PostContent from './PostContent.vue'
             containerClass: 'post-container',
             wrapperClass: '',
             showLikes: false,
-            liked: (this.post.Likes ? this.post.Likes.map(user => user.Username).includes(localStorage.getItem('Username')) : false) ? true : false
         };
+    },
+    computed: {
+        liked() {
+            return (this.post.Likes ? this.post.Likes.map(user => user.Username).includes(localStorage.getItem('Username')) : false) ? true : false
+        }
     },
     methods: {
         changeLike() {

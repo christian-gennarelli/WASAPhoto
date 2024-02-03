@@ -38,6 +38,11 @@
                 photo: '',
             }
         },
+        computed: {
+            profile_user(){
+                this.visitedProfile.user.Username !== this.user.Username
+            }
+        },
         methods: {
             updateUsername(){
                 this.$axios.put(
@@ -199,7 +204,7 @@
                 }
             }
         },
-        async created() { 
+        created() { 
             this.user.Username = localStorage.getItem('Username')
             this.user.ID = localStorage.getItem('ID')
             this.user.ProfilePic = localStorage.getItem('ProfilePic')
@@ -225,11 +230,11 @@
             </span>
             <img class="pencil" src="@/assets/buttons/pencil.png" v-if="this.visitedProfile.user.Username === this.user.Username" type="button" @click="this.modifying=!this.modifying">
             <button v-if="followed" class="left-btn btn-red" button @click="unfollowUser"> Unfollow </button>
-            <button v-else-if="this.visitedProfile.user.Username !== this.user.Username" class="left-btn btn-green" @click="followUser"> Follow </button>
-            <button v-if="this.visitedProfile.user.Username !== this.user.Username" class="left-btn btn-red" @click="banUser"> Ban </button>
+            <button v-else-if="!this.profile_user" class="left-btn btn-green" @click="followUser"> Follow </button>
+            <button v-if="!this.profile_user" class="left-btn btn-red" @click="banUser"> Ban </button>
         </div>
 
-        <div class="right" :style="[this.visitedProfile.user.Username !== this.user.Username ? {'grid-template-columns': '1fr 1fr 1fr'} : {'': ''} ]"> 
+        <div class="right" :style="[this.profile_user ? {'grid-template-columns': '1fr 1fr 1fr'} : {'': ''} ]"> 
             <PopupUserlist
                 category="Followers"
                 :show="this.showFollowers"
@@ -282,7 +287,7 @@
     </div>
 </template>
 
-<style>
+<style scoped>
 
 .profile-container {
     margin: 15px;
@@ -355,7 +360,6 @@
     color: green
 }
 
-
 .upload-overlay {
     display: flex;
     align-items: center;
@@ -382,15 +386,6 @@
     background: radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%);
     z-index: 1;
 
-}
-
-.exit {
-    border-radius: 25px;
-    width: 32px;
-    height: 32px;
-    position: absolute;
-    top: 0;
-    right: 0;
 }
 
 </style>

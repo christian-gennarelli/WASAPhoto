@@ -55,7 +55,7 @@
 <template>
     <div v-if="!loading">
         <Header></Header>
-        <p class="no-posts" v-if="!posts"> No posts to see yet... start following!</p>
+        <p v-if="!posts"> No posts to see yet... start following!</p>
         <div v-else class="home-container"> 
             <Post
                 v-if="posts"
@@ -77,11 +77,11 @@
 .home-container {
     margin: 15px;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
     grid-auto-rows: auto;
 }
 
-.no-posts {
+p {
     text-align: center;
 }
 

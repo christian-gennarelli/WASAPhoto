@@ -10,7 +10,6 @@
                 },
                 searchedUsername: '',
                 loading: true,
-                showUpload: false,
             }
         },
         methods: {
@@ -31,24 +30,18 @@
 
 
         <div class="header-left" type="button" @click="this.$router.push('/home')"> 
-            <span class="title"> WASAPhoto </span>
+            <span> WASAPhoto </span>
         </div>
 
 
         <div class="header-center">
-            <input style="border-radius: 10px;" v-model="searchedUsername" @keyup.enter="this.$router.push({name: 'profile', params: {username: searchedUsername}}); searchedUsername=''" type="textbox" placeholder="Cerca qui...">
+            <input style="border-radius: 10px;" v-model="searchedUsername" @keyup.enter="this.$router.push({name: 'profile', params: {username: searchedUsername}}); searchedUsername=''" type="textbox" placeholder="Find...">
         </div>
 
 
         <div class="header-right"> 
             <router-link :to="{ name: 'profile', params: {username: user.Username} }"> <img :src="this.getImgUrl(user.ProfilePic)">{{user.Username}}</router-link> 
             <span type="button" @click="logout"> Logout </span>
-        </div>
-
-        <div v-if="showUpload" class="upload-overlay">
-            <div class="upload-popup">
-
-            </div>
         </div>
 
     </div>
@@ -59,12 +52,11 @@
 <style scoped>
 
 .header-grid-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
     border: 2px solid black;
     border-radius: 10px;
     margin: 15px;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    /* background: radial-gradient(circle at 10% 20%, rgb(238, 56, 56) 0%, rgba(206, 21, 0, 0.92) 90.1%); */
     background: radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%);
 }
 
@@ -72,13 +64,13 @@
     margin: auto 10px;
 }
 
-.header-left .title {  
+.header-left span {  
     font-size: 50px;
     font-weight: bold;
 }
 
 .header-center {
-    margin: auto auto;
+    margin: auto;
 }
 
 .header-right{

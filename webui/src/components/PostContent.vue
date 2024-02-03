@@ -1,6 +1,6 @@
 <script>
     import { getImgUrl } from '../functions/getImgUrl';
-import PopupUserlist from './PopupUserlist.vue';
+    import PopupUserlist from './PopupUserlist.vue';
     export default {
     props: ['post', 'containerClass', 'wrapperClass', 'showLikes', 'username', 'liked'],
     emits: ["change-class", "change-like", "delete-post", 'change-show-likes', 'comment-post'],
@@ -71,6 +71,16 @@ import PopupUserlist from './PopupUserlist.vue';
 
 <style scoped>
 
+a {
+    font-size: 18px;
+    text-decoration: none;
+    color: black
+}
+
+a:hover {
+    font-weight: bold;
+}
+
 .post-container {
     padding: 1%;
     margin: 1%;
@@ -83,18 +93,8 @@ import PopupUserlist from './PopupUserlist.vue';
     hyphens: auto;
 }
 
-a {
-    font-size: 18px;
-    text-decoration: none;
-    color: black
-}
-
 .post-header {
     position: relative
-}
-
-a:hover {
-    font-weight: bold;
 }
 
 .post-header .author-img {
@@ -102,15 +102,6 @@ a:hover {
     border-radius: 15px;
     width: 24px; 
     height: 24px;
-}
-
-.delete-icon {
-    border-radius: 15px;
-    width: 24px; 
-    height: 24px;
-    position: absolute;
-    top: 0;
-    right: 0;
 }
 
 .post-header span {
@@ -144,28 +135,18 @@ a:hover {
 .post-popup .post-image {
     display: block; 
     max-width: 100%; 
-    max-height: 100%;
+    max-height: 200px;
     width: auto; 
     height: auto;
     border-radius: 15px;
+    max-width: 683px;
+    max-height: 384px;
 }
 
 .post-like {
     display: inline-block;
     padding-top: 2%;
     font-size: 18px;
-}
-
-.like-icon {
-    width: 24px;
-    height: 24px;
-    margin-bottom: 6px;
-    margin-left: 5px
-}
-
-.like-icon:hover {
-    width: 28px;
-    height: 28px;
 }
 
 .post-overlay {
@@ -178,7 +159,7 @@ a:hover {
     left: 0;
     right: 0;
     background: black;
-    overflow:auto;
+    overflow: auto;
     z-index: 1;
     overflow-wrap: break-word;
     word-wrap: break-word;
@@ -189,7 +170,7 @@ a:hover {
     padding: 20px;
     background: #fff;
     border-radius: 5px;
-    width: 40%;
+    width: auto;
     position: relative;
     background: radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%);
 }
@@ -198,15 +179,6 @@ a:hover {
     font-weight: bold;
     font-size: 18px;
     display: inline-block
-}
-
-.exit {
-    border-radius: 25px;
-    width: 32px;
-    height: 32px;
-    position: absolute;
-    top: 0;
-    right: 0;
 }
 
 </style>

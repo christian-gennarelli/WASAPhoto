@@ -38,10 +38,10 @@ export default {
 
 <template>
     <div class="login-container">
-        <div class="login-title"> WASAPhoto. </div>
+        <span class="login-title"> WASAPhoto. </span>
         <div class="login-form">
-            <h2> Get started!</h2>
-            <input type="login-input" v-model="username" @keyup.enter="doLogin" placeholder="Username">
+            <h2> Get started! </h2>
+            <input type="text" class="login-input" v-model="username" @keyup.enter="doLogin" placeholder="Enter username">
             <button class="login-btn" @click.prevent="doLogin"> Go! </button>
         </div>
     </div>
@@ -51,32 +51,44 @@ export default {
 
 .login-container {
     display: grid;
-    position: absolute;
-    width: 1100px;
-    grid-template-columns: 50fr 50fr;
-    margin: 0;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    grid-template-columns: 3fr 1fr;
+    grid-template-rows: 100vh;
+    align-items: center;
+    justify-content: center;
 }
 
 .login-title {
-    font-size: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 10em;
 }
 
 .login-form {
-    margin: auto;
+    width: 100%;
 }
 
-.login-input{
-    border: none;
-    border-bottom: 1px solid black;
+.login-input {
+    outline: none;
+    border: 1px solid black;
+    background: transparent;
+}
+
+::placeholder {
+    color: black
+}
+
+.login-btn {
+    margin-left: 5px;
+    background: transparent;
+    border: 1px solid black;
     outline: none;
 }
 
-.login-btn{
-    margin-left: 5px;
+.login-btn:hover {
+    border: 3px solid black;
+    font-weight: bold;
 }
 
 </style>

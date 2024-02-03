@@ -5,6 +5,8 @@ import axios from './services/axios.js';
 import LoginView from './views/LoginView.vue'
 import Header from './components/Header.vue'
 
+import './assets/css/main.css'
+
 const app = createApp(App)
 app.config.globalProperties.$axios = axios;
 app.component("LoginView", LoginView)

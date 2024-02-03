@@ -1,0 +1,29 @@
+.delete-icon {
+    border-radius: 15px;
+    width: 24px; 
+    height: 24px;
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.like-icon {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 6px;
+    margin-left: 5px
+}
+
+.like-icon:hover {
+    width: 28px;
+    height: 28px;
+}
+
+.exit {
+    border-radius: 25px;
+    width: 32px;
+    height: 32px;
+    position: absolute;
+    top: 0;
+    right: 0;
+}
