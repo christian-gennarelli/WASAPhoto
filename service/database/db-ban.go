@@ -51,6 +51,19 @@ func (db appdbimpl) BanUser(bannerUsername string, bannedUsername string) error 
 		return err
 	}
 
+	stmt, err = db.c.Prepare("DELETE FROM Follow WHERE Follower = ? AND Followed = ?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err = stmt.Exec(bannerUsername, bannedUsername); err != nil {
+		return err
+	}
+	if _, err = stmt.Exec(bannedUsername, bannerUsername); err != nil {
+		return err
+	}
+
 	return nil
 }
 
