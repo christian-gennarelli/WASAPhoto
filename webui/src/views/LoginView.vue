@@ -4,6 +4,7 @@ export default {
     data() {
         return {
             username: '',
+            invalid: false
         }
     }, 
     methods: {
@@ -19,6 +20,7 @@ export default {
                 }
             ).then((res) => {
                 console.log(res.data)
+                this.invalid = false
                 localStorage.setItem('Username', this.username) // Store the input username in local storage
                 localStorage.setItem('ID', res.data.ID) // Store token from response in local storage
                 localStorage.setItem('Birthdate', res.data.Birthdate)
@@ -26,10 +28,11 @@ export default {
                 localStorage.setItem('ProfilePic', res.data.ProfilePic)
                 this.$router.push('/home') // Route to home page
             }).catch((e) => {
-                let error = e.response.data
-                alert(error.ErrorCode + " " + error.Description)
+                alert(e.response.data.ErrorCode + " " + e.response.data.Description)
+                if (e.response.data.ErrorCode == 400){
+                    this.invalid = true
+                }
             })
-
         }
     }
 }
@@ -41,8 +44,11 @@ export default {
         <span class="login-title"> WASAPhoto. </span>
         <div class="login-form">
             <h2> Get started! </h2>
-            <input type="text" class="login-input" v-model="username" @keyup.enter="doLogin" placeholder="Enter username">
-            <button class="login-btn" @click.prevent="doLogin"> Go! </button>
+            <div style="display: block">
+                <input type="text" class="login-input" v-model="username" @keyup.enter="doLogin" placeholder="Enter username">
+                <button class="login-btn" @click="doLogin"> Go! </button>
+            </div>
+            <div v-if="invalid" style="width: 250px"> Between 8 and 16 chararacters (only _ and - are allowed as special characters) </div>
         </div>
     </div>
 </template>

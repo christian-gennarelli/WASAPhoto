@@ -40,7 +40,7 @@
         },
         computed: {
             profile_user(){
-                this.visitedProfile.user.Username !== this.user.Username
+                return this.visitedProfile.user.Username === this.user.Username
             }
         },
         methods: {
@@ -146,6 +146,7 @@
                     alert(e.response.data.ErrorCode + " " + e.response.data.Description)
                 })
                 this.showUpload = false
+                this.description = ''
             },
             async getVisitedProfile(){
                 // GetUserProfile (visited user)
@@ -228,13 +229,13 @@
                 <input type="textbox" v-model="newUsername" @keyup.enter="updateUsername" placeholder="Enter new username">
                 <!-- <span> Remember: username can contain only lower/upper case letters, underscores (_) and dashes (-). </span> -->
             </span>
-            <img class="pencil" src="@/assets/buttons/pencil.png" v-if="this.visitedProfile.user.Username === this.user.Username" type="button" @click="this.modifying=!this.modifying">
+            <img class="pencil" src="@/assets/buttons/pencil.png" v-if="this.profile_user" type="button" @click="this.modifying=!this.modifying">
             <button v-if="followed" class="left-btn btn-red" button @click="unfollowUser"> Unfollow </button>
             <button v-else-if="!this.profile_user" class="left-btn btn-green" @click="followUser"> Follow </button>
             <button v-if="!this.profile_user" class="left-btn btn-red" @click="banUser"> Ban </button>
         </div>
 
-        <div class="right" :style="[this.profile_user ? {'grid-template-columns': '1fr 1fr 1fr'} : {'': ''} ]"> 
+        <div class="right" :style="[!this.profile_user ? {'grid-template-columns': '1fr 1fr 1fr'} : {'': ''} ]"> 
             <PopupUserlist
                 category="Followers"
                 :show="this.showFollowers"
