@@ -25,7 +25,7 @@ func (db appdbimpl) BanUser(bannerUsername string, bannedUsername string) error 
 		return err
 	}
 
-	stmt, err = db.c.Prepare("DELETE FROM Like WHERE PostID IN (SELECT P.PostID FROM Post P JOIN Like L ON L.PostID = P.PostID WHERE L.Liker = ? AND P.Author = ?)")
+	stmt, err = db.c.Prepare("DELETE FROM Like WHERE Liker = ? AND PostID IN (SELECT P.PostID FROM Post P WHERE P.Author = ?)")
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (db appdbimpl) BanUser(bannerUsername string, bannedUsername string) error 
 		return err
 	}
 
-	stmt, err = db.c.Prepare("DELETE FROM Comment WHERE PostID IN (SELECT P.PostID FROM Post P JOIN Comment C ON C.PostID = P.PostID WHERE C.Author = ? AND P.Author = ?)")
+	stmt, err = db.c.Prepare("DELETE FROM Comment WHERE Author = ? AND PostID IN (SELECT P.PostID FROM Post P WHERE P.Author = ?)")
 	if err != nil {
 		return err
 	}
