@@ -55,14 +55,20 @@
             <div v-if="this.containerClass == 'post-overlay'">
                 <span class="comments-title"> Comments </span>
                 <textarea v-model="comment" style="display: block; border-radius: 10px; width: 50%; height: 75px" placeholder="Write a comment!" @keyup.enter="this.$emit('comment-post', comment); this.comment=''"></textarea>
-                <span style="display: block" v-for="comment, key in post.Comments" :key="key">
-                    <router-link :to="{ name: 'profile', params: {username: comment.Author }}"> 
-                        <span class="post-body-title"> {{ comment.Author }}</span>:
-                    </router-link>
-                    <span class="post-body-description"> {{ comment.Body }} </span> 
-                    <span><img title="Delete comment" @click="this.$emit('delete-comment', comment.CommentID)" style="border-radius: 15px; width: 24px; height: 24px; float: right" v-if="comment.Author == username"  src="@/assets/buttons/x-red.png"></span>
-                    <span style="float: right"> {{ comment.CreationDatetime}} </span>
-                </span>
+                <div style="display: block" v-for="comment, key in post.Comments" :key="key">
+                    <div style="display: grid; grid-template-columns: 3fr 2fr;" class="display: inline-block">
+                        <div>
+                            <router-link @click="this.$emit('change-class')" :to="{ name: 'profile', params: {username: comment.Author }}"> 
+                                <span class="post-body-title"> {{ comment.Author }}</span>:
+                            </router-link>
+                            <span class="post-body-description"> {{ comment.Body }} </span> 
+                        </div>
+                        <div>
+                            <span style="float: right"> {{ comment.CreationDatetime}} </span>
+                            <span><img title="Delete comment" @click="this.$emit('delete-comment', comment.CommentID)" style="border-radius: 15px; width: 24px; height: 24px; float: right" v-if="comment.Author == username"  src="@/assets/buttons/x-red.png"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -124,8 +130,8 @@ a:hover {
 
 .post-body .post-image {
     display: block; 
-    max-width:100%; 
-    max-height:200px; 
+    max-width: 336px; 
+    max-height: 189px; 
     width: auto; 
     height: auto;
     border-radius: 15px;
@@ -168,11 +174,18 @@ a:hover {
 
 .post-popup {
     padding: 20px;
+    overflow: scroll;
     background: #fff;
     border-radius: 5px;
     width: auto;
+    max-width: 800px;
+    max-height: 800px;
     position: relative;
     background: radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%);
+}
+
+.post-popup::-webkit-scrollbar {
+  display: none;
 }
 
 .comments-title {
