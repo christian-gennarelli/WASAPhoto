@@ -197,8 +197,6 @@ components:
           pattern: ''
     
 tags:
-  - name: USER
-    description: User operations.
   - name: LOGIN
     description: Login operation.
   - name: POST
