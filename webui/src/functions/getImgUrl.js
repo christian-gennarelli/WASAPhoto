@@ -1,5 +1,5 @@
 export const getImgUrl = (path) => {
     if (path) {
-        return "http://localhost:3000/photos/?photo_path=" + path
+        return __API_URL__ + "/photos/?photo_path=" + path
     }
 }
