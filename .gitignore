@@ -4,3 +4,5 @@ photos/profile_pics/chrigenna.png
 photos/posts/giuliani_1.png
 photos/posts/chrigenna_1.png
 theweeknd.png
+bin/golangci-lint
+.gitignore
