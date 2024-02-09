@@ -1046,9 +1046,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
   
-  /photos/{photo_path}:
+  /photos/:
     parameters:
-      - in: path
+      - in: query
         name: photo_path
         description: |-
           URL path of the requested photo.
