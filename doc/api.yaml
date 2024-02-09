@@ -259,7 +259,7 @@ paths:
     get:
       operationId: getMyStream
       description: Update and display the stream of posts for the authenticated usernames.
-      summary: It allows for the user to get its main stream of posts diplayed on the home page.
+      summary: Get user posts stream
       tags: ['STREAM']
       security:
         - BearerAuth: []
@@ -516,7 +516,7 @@ paths:
     delete:
       operationId: deletePhoto
       tags: ['POST']
-      summary: Delete an already posted post
+      summary: Delete a post
       description: |-
         Delete from the user's profile a post that it previously posted somewhen in the past.
       security:
@@ -569,58 +569,6 @@ paths:
         schema:
           $ref: '#/components/schemas/ID'
         required: true
-
-    get:
-      operationId: getPostLikes
-      summary: Get list of likes of a post
-      tags: ['POST']
-      description: |-
-        Return the list of users which liked the provided post.
-      security:
-        - BearerAuth: []
-      responses:
-        '201': # OK Found
-          description: |-
-            The list of users liking the provided post is correctly returned.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserList'
-        '204': # No content found
-          description: No user liked the given post.
-        '400': # Bad request
-          description: Bad request provided.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401': # Unauthenticated
-          description: The client is NOT authenticated.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403': # Unauthorized
-          description: |-
-            The authenticated user banned the owner of the post, or viceversa.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404': # Username or post not found
-          description: |- 
-            Either the post to be liked or the username has not been found. 
-            Alternatively, the username provided in the path does not own the given post.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500': # Internal server error.
-          description: Internal server error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
     
     put:
       operationId: likePhoto
@@ -744,55 +692,6 @@ paths:
         schema:
           $ref: '#/components/schemas/ID'
         required: true
-
-    get:
-      operationId: getPostComments
-      tags: ['POST']
-      summary: Get comments under a post
-      description: |-
-        Return the list of the comments under the post with id 'post_id' of 'username'.
-      security:
-        - BearerAuth: []
-      responses:
-        '200': # OK
-            description: Return the list of comments under the post.
-            content:
-              application/json:
-                schema: 
-                  $ref: '#/components/schemas/CommentList'
-        '204': # No content
-          description: No comment was found under the given post.
-        '400': # Bad request
-          description: The request cannot be processed.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401': # Unauthenticated
-          description: The client is NOT authenticated.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403': # Unauthorized
-          description: |-
-            The authenticated user banned the owner of the post, or viceversa.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404': # User or pst not found
-          description: Either the post or the username provided in the path has not been found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500': # Internal server error.
-          description: Internal server error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
       
     post:
       operationId: commentPhoto
@@ -927,56 +826,6 @@ paths:
         schema:
           $ref: '#/components/schemas/Username'
         required: true
-
-    get:
-      operationId: getFollowingList
-      tags: ['FOLLOW']
-      summary: Get the following list
-      description: |-
-        Return the list of the users that username follows.
-      security:
-        - BearerAuth: []
-      responses:
-        '200': # OK Found
-          description: |-
-            The following list if correctly returned.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserList'
-        '204': # No content found
-          description: This user does not follow any user.
-        '400': # Bad request
-          description: Bad request provided.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401': # Unauthenticated
-          description: The client is NOT authenticated.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403': # Unauthorized
-          description: |-
-            The authenticated user banned the user provided in the path, or viceversa.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404': # Username not found
-          description: Username has not been found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500': # Internal server error.
-          description: Internal server error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
   
     put: 
       operationId: followUser
@@ -1086,53 +935,6 @@ paths:
         schema:
           $ref: '#/components/schemas/Username'
         required: true
-    
-    get: 
-      operationId: getFollowersList
-      tags: ['FOLLOW']
-      summary: Get the list of followers
-      description: |-
-        Return the list of followers of the given username
-      security:
-        - BearerAuth: []
-      responses:
-        '200': # OK
-          description: Followers list successfully returned.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserList'
-        '400': # Bad request
-          description: Bad request provided.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401': # Unauthenticated
-          description: The client is NOT authenticated.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403': # Unauthorized
-          description: |-
-            The authenticated user banned the username provided in the path, or viceversa.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404': # Username or post not found
-          description: Either the post to be uncommented or the owner of the post has not been found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500': # Internal server error.
-          description: Internal server error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
   
   /users/{username}/banned/:
     parameters:
@@ -1141,49 +943,6 @@ paths:
           schema:
             $ref: '#/components/schemas/Username'
           required: true
-
-    get:
-      operationId: getBanUserList
-      tags: ['BAN']
-      summary: Return user banlist.
-      description: |-
-        Return the list of banned users for the specified user.
-      security:
-        - BearerAuth: []
-      responses:
-        '201': # OK
-          description: The list of banned users is successfully returned.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserList'
-        '204':
-          description: The user has banned no other user.
-        '400': # Bad request
-          description: Bad request provided.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401': # Unauthenticated
-          description: The client is NOT authenticated.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403': # Unauthorized
-          description: |-
-            The authenticated user cannot see banned users of some other user.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500': # Internal server error.
-          description: Internal server error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
     
     put: 
       operationId: banUser

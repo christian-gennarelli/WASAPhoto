@@ -176,12 +176,13 @@ func (rt _router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httpr
 	err = rt.db.UpdateUsername(newUsername, username)
 	if err != nil {
 		var mess []byte
+		var sqliteErr sqlite3.Error
 		if errors.Is(err, sql.ErrNoRows) { // Old username not found
 			w.WriteHeader(http.StatusNotFound)
 			ctx.Logger.WithError(err).Error("provided username does not exist")
 			mess = []byte(fmt.Errorf(components.StatusNotFound, "provided username does not exists").Error())
-			// else if errors.Is(err, sqlite3.ErrConstraintUnique) { // Username already exists
-		} else if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
+		} else if errors.As(err, &sqliteErr); sqliteErr.Code == sqlite3.ErrConstraint {
+			// if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
 			w.WriteHeader(http.StatusNotAcceptable)
 			ctx.Logger.WithError(err).Error("provided username already exists")
 			mess = []byte(fmt.Errorf(components.StatusNotAcceptable, "provided username already exists").Error())

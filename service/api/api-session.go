@@ -66,7 +66,7 @@ func (rt _router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.
 		return
 	}
 
-	response, err := json.MarshalIndent(user, "", " ")
+	response, err := json.MarshalIndent(&user, "", " ")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		ctx.Logger.WithError(err).Error("error while enconding the response body as JSON")

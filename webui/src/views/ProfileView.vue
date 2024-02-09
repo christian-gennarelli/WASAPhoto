@@ -7,6 +7,8 @@
     export default {
         data() {
             return {
+
+                // Visited user profile
                 visitedProfile: {
                     user: {
                         Username: '',
@@ -19,13 +21,23 @@
                     followings: [],
                     banned: [],
                 },
-                user: { // User info
-                    ID: '',
-                    Username: '',
-                    Name: '',
-                    Birthdate: '',
-                    ProfilePic: '',
+
+                // Authenticated user profile
+                authProfile: { // User info
+                    user: {
+                        ID: localStorage.getItem("ID"),
+                        Username: localStorage.getItem("Username"),
+                        Name: localStorage.getItem("Name"),
+                        Birthdate: localStorage.getItem("Birthdate"),
+                        ProfilePic: localStorage.getItem("ProfilePic"),
+                    },
+                    posts: [],
+                    followers: [],
+                    followings: [],
+                    banned: [],
                 },
+
+                // Miscellaneuous
                 newUsername: '',
                 loading: true,
                 modifying: false,
@@ -39,18 +51,18 @@
             }
         },
         computed: {
-            profile_user(){
-                return this.visitedProfile.user.Username === this.user.Username
+            isAuthProfile() {
+                return this.$route.params.username === this.authProfile.user.Username
             }
         },
         methods: {
             updateUsername(){
                 this.$axios.put(
-                    "/users/" + this.user.Username + "/profile/",
+                    "/users/" + this.authProfile.user.Username + "/profile/",
                     this.newUsername,
                     {
                         headers: {
-                            "Authorization": this.user.ID,
+                            "Authorization": this.authProfile.user.ID,
                             "Content-Type": 'text/plain'
                         }
                     }
@@ -66,46 +78,48 @@
             },
             followUser(){
                 this.$axios.put(
-                    '/users/' + this.user.Username + '/followings/',
+                    '/users/' + this.authProfile.user.Username + '/followings/',
                     null,
                     {
                         params: {
                             followed_username: this.visitedProfile.user.Username,
                         },
                         headers: {
-                            'Authorization': this.user.ID
+                            'Authorization': this.authProfile.user.ID
                         }
                     }
                 ).catch(()=>{
                     alert(e.response.data.ErrorCode + " " + e.response.data.Description)
                 })
-                this.visitedProfile.followers.unshift(this.user)
+                this.visitedProfile.followers.unshift(this.authProfile.user)
+                this.authProfile.followings.unshift(this.visitedProfile.user)
                 this.followed = !this.followed 
             },
             unfollowUser(){
                 this.$axios.delete(
-                    '/users/' + this.user.Username + '/followings/' + this.visitedProfile.user.Username,
+                    '/users/' + this.authProfile.user.Username + '/followings/' + this.visitedProfile.user.Username,
                     {
                         headers: {
-                            "Authorization": this.user.ID,
+                            "Authorization": this.authProfile.user.ID,
                         }
                     }
                 ).catch(()=>{
                     alert(e.response.data.ErrorCode + " " + e.response.data.Description)
                 })
-                this.visitedProfile.followers = this.visitedProfile.followers.filter(u => u.Username !== this.user.Username)
+                this.visitedProfile.followers = this.visitedProfile.followers.filter(u => u.Username !== this.authProfile.user.Username)
+                this.authProfile.followings = this.authProfile.followings.filter(u => u.Username !== this.visitedProfile.user.Username)
                 this.followed = !this.followed 
             },
             banUser(){
                 this.$axios.put(
-                    '/users/' + this.user.Username + '/banned/',
+                    '/users/' + this.authProfile.user.Username + '/banned/',
                     null,
                     {
                         params: {
                             banned_username: this.visitedProfile.user.Username
                         },
                         headers: {
-                            'Authorization': this.user.ID
+                            'Authorization': this.authProfile.user.ID
                         }
                     }
                 ).catch((e)=>{
@@ -116,10 +130,10 @@
             },
             unbanUser(bannedUsername){
                 this.$axios.delete(
-                    '/users/' + this.user.Username + '/banned/' + bannedUsername,
+                    '/users/' + this.authProfile.user.Username + '/banned/' + bannedUsername,
                     {
                         headers: {
-                            'Authorization': this.user.ID
+                            'Authorization': this.authProfile.user.ID
                         }
                     }
                 ).catch((e)=>{
@@ -132,11 +146,11 @@
                 formData.append('photo', this.photo);
                 formData.append('description', this.description)
                 this.$axios.post(
-                    '/users/' + this.user.Username + '/profile/posts/',
+                    '/users/' + this.authProfile.user.Username + '/profile/posts/',
                     formData,
                     {
                         headers: {
-                            'Authorization': this.user.ID,
+                            'Authorization': this.authProfile.user.ID,
                             'Content-Type': 'multipart/form-data'
                         }
                     }
@@ -149,12 +163,31 @@
                 this.description = ''
             },
             async getVisitedProfile(){
-                // GetUserProfile (visited user)
+
+                // Get authenticated user profile
+                await this.$axios.get(
+                    "/users/" + this.authProfile.user.Username + "/profile/",
+                    {
+                        headers: {
+                            'Authorization': this.authProfile.user.ID
+                        },
+                    }
+                ).then((res) => {
+                    this.authProfile.followings = res.data.Followings ? res.data.Followings : []
+                    this.authProfile.followers = res.data.Followers ? res.data.Followers : []
+                    this.authProfile.banned = res.data.Banned ? res.data.Banned : []
+                    this.authProfile.posts = res.data.Posts ? res.data.Posts : []
+                }).catch((e) => {
+                    alert(e.response.data.ErrorCode + " " + e.response.data.Description)
+                    this.$router.push('/')
+                })
+
+                // Get visited user profile
                 await this.$axios.get(
                     "/users/" + this.$route.params.username + "/profile/",
                     {
                         headers: {
-                            'Authorization': this.user.ID
+                            'Authorization': this.authProfile.user.ID
                         },
                     }
                 ).then((res) => {
@@ -163,34 +196,16 @@
                     this.visitedProfile.followers = res.data.Followers ? res.data.Followers : []
                     this.visitedProfile.banned = res.data.Banned ? res.data.Banned : []
                     this.visitedProfile.posts = res.data.Posts ? res.data.Posts : []
-                    console.log(this.visitedProfile.posts)
+                    for (let i = 0; i < this.authProfile.followings.length; i++){
+                        if (this.authProfile.followings[i].Username == this.visitedProfile.user.Username){
+                            this.followed = true
+                            break
+                        }
+                    }
                 }).catch((e) => {
                     alert(e.response.data.ErrorCode + " " + e.response.data.Description)
                     this.$router.push('/')
                 })
-                // GetFollowingsList (authenticated user)
-                await this.$axios.get(
-                    "/users/" + this.user.Username + "/followings/",
-                    {
-                        headers: {  
-                            'Authorization': this.user.ID
-                        }
-                    }
-                ).then((res)=>{
-                    if (this.visitedProfile.user.Username !== this.user.Username) {
-                        for (let i = 0; i < res.data.length; i++){
-                            if (res.data[i]["Username"] === this.visitedProfile.user.Username){
-                                this.followed = true
-                                break
-                            }
-                        }
-                    }
-                }).catch((e)=>{
-                    alert(e.response.data.ErrorCode + " " + e.response.data.Description)
-                    this.loading = true
-                    this.$router.push('/')
-                })
-                // Update vars
                 this.loading = false
             },
             getImgUrl,
@@ -206,11 +221,7 @@
             }
         },
         created() { 
-            this.user.Username = localStorage.getItem('Username')
-            this.user.ID = localStorage.getItem('ID')
-            this.user.ProfilePic = localStorage.getItem('ProfilePic')
-            this.user.Birthdate = localStorage.getItem('Birthdate')
-            this.user.Name = localStorage.getItem('Name')
+            console.log(this.authProfile.followings)
             this.getVisitedProfile()
         },
         components:{
@@ -229,13 +240,13 @@
                 <input type="textbox" v-model="newUsername" @keyup.enter="updateUsername" placeholder="Enter new username">
                 <!-- <span> Remember: username can contain only lower/upper case letters, underscores (_) and dashes (-). </span> -->
             </span>
-            <img class="pencil" src="@/assets/buttons/pencil.png" v-if="this.profile_user" type="button" @click="this.modifying=!this.modifying">
+            <img class="pencil" src="@/assets/buttons/pencil.png" v-if="this.isAuthProfile" type="button" @click="this.modifying=!this.modifying">
             <button v-if="followed" class="left-btn btn-red" button @click="unfollowUser"> Unfollow </button>
-            <button v-else-if="!this.profile_user" class="left-btn btn-green" @click="followUser"> Follow </button>
-            <button v-if="!this.profile_user" class="left-btn btn-red" @click="banUser"> Ban </button>
+            <button v-else-if="!this.isAuthProfile" class="left-btn btn-green" @click="followUser"> Follow </button>
+            <button v-if="!this.isAuthProfile" class="left-btn btn-red" @click="banUser"> Ban </button>
         </div>
 
-        <div class="right" :style="[!this.profile_user ? {'grid-template-columns': '1fr 1fr 1fr'} : {'': ''} ]"> 
+        <div class="right" :style="[!isAuthProfile ? {'grid-template-columns': '1fr 1fr 1fr'} : {'': ''} ]"> 
             <PopupUserlist
                 category="Followers"
                 :show="this.showFollowers"
@@ -259,7 +270,7 @@
                 @remove-comment="(commentID) => this.visitedProfile.posts[key].Comments = this.visitedProfile.posts[key].Comments.filter(c => c.CommentID != commentID)"
             >
             </PopupUserlist>
-            <button v-if="this.visitedProfile.user.Username == this.user.Username" @click="this.showUpload=true"> Upload new post </button>
+            <button v-if="this.visitedProfile.user.Username == this.authProfile.user.Username" @click="this.showUpload=true"> Upload new post </button>
             <div v-if="showUpload" class="upload-overlay">
                 <div class="upload-popup">
                     <img type="button" @click="this.showUpload=false" class="exit" src="@/assets/buttons/close.png">
@@ -278,9 +289,9 @@
             v-if="visitedProfile.posts"
             v-for="(post, key) in visitedProfile.posts" 
             :post="post"
-            :user="user"
-            @add-like="this.visitedProfile.posts[key].Likes ? this.visitedProfile.posts[key].Likes.unshift(this.user) : this.visitedProfile.posts[key].Likes = [user]"
-            @remove-like="this.visitedProfile.posts[key].Likes = this.visitedProfile.posts[key].Likes.filter(u => u.Username !== this.user.Username)"
+            :user="authProfile.user"
+            @add-like="this.visitedProfile.posts[key].Likes ? this.visitedProfile.posts[key].Likes.unshift(this.authProfile.user) : this.visitedProfile.posts[key].Likes = [this.authProfile.user]"
+            @remove-like="this.visitedProfile.posts[key].Likes = this.visitedProfile.posts[key].Likes.filter(u => u.Username !== this.authProfile.user.Username)"
             @remove-post="this.visitedProfile.posts.splice(key, 1)"
             @add-comment="(comment) => this.visitedProfile.posts[key].Comments ? this.visitedProfile.posts[key].Comments.unshift(comment) : this.visitedProfile.posts[key].Comments = [comment]"
             @remove-comment="(commentID) => this.visitedProfile.posts[key].Comments = this.visitedProfile.posts[key].Comments.filter(c => c.CommentID != commentID)"

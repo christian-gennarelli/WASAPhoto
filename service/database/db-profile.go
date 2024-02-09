@@ -34,7 +34,6 @@ func (db appdbimpl) GetUserProfile(Username string) (*components.Profile, error)
 		return nil, err
 	}
 	defer stmt.Close()
-	//(SELECT COUNT(*) FROM Like L WHERE L.PostID = P.PostID) as Likes
 
 	rows, err := stmt.Query(Username)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {

@@ -21,8 +21,8 @@
 
     <div :class="containerClass">
         <div :class="wrapperClass">
-            <img v-if="wrapperClass" type="button" @click="this.$emit('change-class')" class="exit" src="@/assets/buttons/close.png" style="width: 30px; height: 30px;">
             <div class="post-header">
+                <img v-if="wrapperClass" type="button" @click="this.$emit('change-class')" class="exit" src="@/assets/buttons/close.png">
                 <img class="author-img" :src="this.getImgUrl('profile_pics/' + post.Author + '.png')">
                 <router-link @click="wrapperClass ? this.$emit('change-class') : null" :to="{ name: 'profile', params: {username: post.Author }}">
                     {{ post.Author }}
@@ -56,7 +56,7 @@
                 <span class="comments-title"> Comments </span>
                 <textarea v-model="comment" style="display: block; border-radius: 10px; width: 50%; height: 75px" placeholder="Write a comment!" @keyup.enter="this.$emit('comment-post', comment); this.comment=''"></textarea>
                 <div style="display: block" v-for="comment, key in post.Comments" :key="key">
-                    <div style="display: grid; grid-template-columns: 3fr 2fr;" class="display: inline-block">
+                    <div style="display: grid; grid-template-columns: 3fr 1fr;" class="display: inline-block">
                         <div>
                             <router-link @click="this.$emit('change-class')" :to="{ name: 'profile', params: {username: comment.Author }}"> 
                                 <span class="post-body-title"> {{ comment.Author }}</span>:
@@ -100,7 +100,7 @@ a:hover {
 }
 
 .post-header {
-    position: relative
+    position: relative;
 }
 
 .post-header .author-img {
@@ -173,13 +173,15 @@ a:hover {
 }
 
 .post-popup {
-    padding: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 10px;
     overflow: scroll;
     background: #fff;
     border-radius: 5px;
     width: auto;
-    max-width: 800px;
-    max-height: 800px;
+    max-width: 55%;
+    max-height: 80%;
     position: relative;
     background: radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%);
 }

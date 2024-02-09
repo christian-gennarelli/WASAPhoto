@@ -21,8 +21,8 @@ export default {
             ).then((res) => {
                 console.log(res.data)
                 this.invalid = false
-                localStorage.setItem('Username', this.username) // Store the input username in local storage
-                localStorage.setItem('ID', res.data.ID) // Store token from response in local storage
+                localStorage.setItem('Username', res.data.Username) 
+                localStorage.setItem('ID', res.data.ID)
                 localStorage.setItem('Birthdate', res.data.Birthdate)
                 localStorage.setItem('Name', res.data.Name)
                 localStorage.setItem('ProfilePic', res.data.ProfilePic)

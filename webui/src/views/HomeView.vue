@@ -3,13 +3,13 @@
     import Post from '../components/Post.vue'
     export default {
         data() {
-            return{ 
-                user: { // User info
-                    ID: '',
-                    Username: '',
-                    Name: '',
-                    Birthdate: '',
-                    ProfilePic: '',
+            return { 
+                user: {
+                    ID: localStorage.getItem("ID"),
+                    Username: localStorage.getItem("Username"),
+                    Name: localStorage.getItem("Name"),
+                    Birthdate: localStorage.getItem("Birthdate"),
+                    ProfilePic: localStorage.getItem("ProfilePic"),
                 },
                 posts: [],
                 loading: true,
@@ -26,7 +26,6 @@
                     }
                 ).then((res) => {
                     this.posts = res.data 
-                    console.log(this.posts)
                 }).catch((e) => {
                     alert(e.response.data.ErrorCode + " " + e.response.data.Description)
                 })
@@ -37,15 +36,8 @@
             Post: Post
         },
         created() {
-
-            // Username and token
-            this.user.Username = localStorage.getItem('Username')
-            this.user.ID = localStorage.getItem('ID')
-            this.user.ProfilePic = localStorage.getItem('ProfilePic')
-            this.user.Birthdate = localStorage.getItem('Birthdate')
-            this.user.Name = localStorage.getItem('Name')
-
             // Stream
+            console.log(this.user, this.followings)
             this.getUserStream();
             this.loading = false
         },

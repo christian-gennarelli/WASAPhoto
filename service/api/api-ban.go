@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,79 +10,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/mattn/go-sqlite3"
 )
-
-func (rt _router) getBanUserList(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
-
-	// Retrieve the username of the authenticated user
-	authUsername := helperAuth(w, r, ps, ctx, rt)
-	if authUsername == nil {
-		return
-	}
-
-	// Retrieve the username from the path and check if it's valid
-	bannerUsername := ps.ByName("username")
-	if err := components.CheckIfValid(bannerUsername, "Username"); err != nil {
-		var mess []byte
-		if errors.Is(err, components.ErrUsernameNotValid) {
-			w.WriteHeader(http.StatusBadRequest)
-			ctx.Logger.WithError(err).Error("provided username not valid")
-			mess = []byte(fmt.Errorf(components.StatusBadRequest, "provided username not valid").Error())
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			ctx.Logger.WithError(err).Error("error while checking if the username is valid")
-			mess = []byte(fmt.Errorf(components.StatusInternalServerError, "error while checking if the username is valid").Error())
-		}
-		if _, err = w.Write(mess); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return
-	}
-
-	// Check if the username in the path is the same as the authenticated one
-	if bannerUsername != *authUsername {
-		w.WriteHeader(http.StatusUnauthorized)
-		ctx.Logger.Error("cannot unban an user on behalf of another user")
-		if _, err := w.Write([]byte(fmt.Errorf(components.StatusUnauthorized, "cannot unban an user on behalf of another user").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return
-	}
-
-	// Get the list of banned users
-	bannedUserList, err := rt.db.GetBanUserList(bannerUsername)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		ctx.Logger.WithError(err).Error("error while getting the banlist for the user")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while getting the banlist for the user").Error())); err != nil {
-			ctx.Logger.WithError(err).Error("error while writing the response")
-		}
-		return
-	}
-
-	if len(*bannedUserList) > 0 {
-		w.WriteHeader(http.StatusOK)
-		response, err := json.MarshalIndent(*bannedUserList, "", " ")
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			ctx.Logger.WithError(err).Error("error while encoding the response as JSON")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while encoding the response as JSON").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("error while writing the response")
-			}
-			return
-		}
-		if _, err = w.Write(response); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			ctx.Logger.WithError(err).Error("error while writing the response")
-			if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "error while writing the response").Error())); err != nil {
-				ctx.Logger.WithError(err).Error("error while writing the response")
-			}
-			return
-		}
-	} else {
-		w.WriteHeader(http.StatusNoContent)
-	}
-
-}
 
 func (rt _router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
@@ -146,8 +72,9 @@ func (rt _router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.
 	// Ban the user
 	if err := rt.db.BanUser(bannerUsername, bannedUsername); err != nil {
 		var mess []byte
-		// if errors.Is(err, sqlite3.ErrConstraintForeignKey) {
-		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
+		var sqliteErr sqlite3.Error
+		if errors.As(err, &sqliteErr); sqliteErr.Code == sqlite3.ErrConstraint {
+			// if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
 			w.WriteHeader(http.StatusNotFound)
 			ctx.Logger.WithError(err).Error("provided username not found")
 			mess = []byte(fmt.Errorf(components.StatusNotFound, "provided username not found").Error())
