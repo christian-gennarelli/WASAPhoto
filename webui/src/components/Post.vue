@@ -98,7 +98,7 @@ import PostContent from './PostContent.vue'
             if (this.containerClass == 'post-container'){
                 this.containerClass = 'post-overlay'
                 this.wrapperClass = 'post-popup'
-            } else {
+            } else { 
                 this.containerClass = 'post-container'
                 this.wrapperClass = ''
             }
@@ -121,7 +121,7 @@ import PostContent from './PostContent.vue'
         :username="user.Username"
         @change-class="changeClass"
         @change-like="changeLike"
-        @change-show-likes="this.showLikes = !this.showLikes"
+        @change-show-likes="this.showLikes = !this.showLikes; if (this.containerClass == 'post-overlay') {changeClass()}"
         @delete-post="deletePost"
         @comment-post="(comment) => commentPost(comment)"
         @delete-comment="(commentID) => deleteComment(commentID)"

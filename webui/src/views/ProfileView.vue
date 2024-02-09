@@ -236,7 +236,7 @@
         <div class="left">
             <img class="profile-img" :src="this.getImgUrl(this.visitedProfile.user.ProfilePic)">
             <span class="profile-username" v-if="!this.modifying"> {{ visitedProfile.user.Username }} </span>
-            <span class="modified-profile-username" v-if="this.modifying">
+            <span class="modified-profile-username" v-else>
                 <input type="textbox" v-model="newUsername" @keyup.enter="updateUsername" placeholder="Enter new username">
                 <!-- <span> Remember: username can contain only lower/upper case letters, underscores (_) and dashes (-). </span> -->
             </span>
@@ -284,9 +284,8 @@
         </div>
     </div>
     
-    <div class="home-container" v-if="!showFollowers && !showFollowings && !showBanned">
+    <div class="home-container" v-if="!showFollowers && !showFollowings && !showBanned && visitedProfile.posts">
         <Post  
-            v-if="visitedProfile.posts"
             v-for="(post, key) in visitedProfile.posts" 
             :post="post"
             :user="authProfile.user"

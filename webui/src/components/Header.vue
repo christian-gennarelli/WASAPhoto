@@ -54,9 +54,7 @@
 .header-grid-container {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    border: 2px solid black;
-    border-radius: 10px;
-    margin: 15px;
+    border-bottom: 2px solid black;
     background: radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%);
 }
 

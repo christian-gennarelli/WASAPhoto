@@ -21,8 +21,8 @@
 
     <div :class="containerClass">
         <div :class="wrapperClass">
+            <img v-if="wrapperClass" type="button" @click="this.$emit('change-class')" class="exit" src="@/assets/buttons/close.png">
             <div class="post-header">
-                <img v-if="wrapperClass" type="button" @click="this.$emit('change-class')" class="exit" src="@/assets/buttons/close.png">
                 <img class="author-img" :src="this.getImgUrl('profile_pics/' + post.Author + '.png')">
                 <router-link @click="wrapperClass ? this.$emit('change-class') : null" :to="{ name: 'profile', params: {username: post.Author }}">
                     {{ post.Author }}
@@ -130,23 +130,17 @@ a:hover {
 
 .post-body .post-image {
     display: block; 
-    max-width: 336px; 
-    max-height: 189px; 
-    width: auto; 
-    height: auto;
+    width: 352px; 
+    height: 198px; 
     border-radius: 15px;
     box-shadow: rgba(0, 0, 0, 0.35) 15px 5px 0px;
 }
 
 .post-popup .post-image {
     display: block; 
-    max-width: 100%; 
-    max-height: 200px;
-    width: auto; 
-    height: auto;
     border-radius: 15px;
-    max-width: 683px;
-    max-height: 384px;
+    width: 640px;
+    height: 360px;
 }
 
 .post-like {
@@ -177,11 +171,9 @@ a:hover {
     margin-bottom: 20px;
     padding: 10px;
     overflow: scroll;
-    background: #fff;
     border-radius: 5px;
-    width: auto;
-    max-width: 55%;
-    max-height: 80%;
+    width: 800px;
+    height: 500px;
     position: relative;
     background: radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%);
 }

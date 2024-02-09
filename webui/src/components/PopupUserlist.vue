@@ -13,8 +13,8 @@
 </script>
 
 <template>
-    <div class="first"> 
-        <span type="button" @click="this.$emit('change-show')" class="title"> {{ category }}:</span> {{ list.length }}
+    <div style="font-size: 25px;"> 
+        <span type="button" @click="this.$emit('change-show')" style="font-weight: bold;"> {{ category }}:</span> {{ list.length }}
         <div class="profile-overlay" v-if="show">
             <span class="profile-popup" style="font-size: 25px;" >
                 <span> {{ category }}: </span>
@@ -45,14 +45,6 @@
     font-style: italic;
 }
 
-.first {
-    font-size: 25px;
-}
-
-div .title {
-    font-weight: bold;
-}
-
 .profile-overlay .profile-popup a {
     text-decoration: none;
     color: black;
@@ -72,9 +64,8 @@ div .title {
     left: 0;
     right: 0;
     background: black;
-    overflow:auto;
+    overflow: auto;
     z-index: 1;
-
 }
 
 .profile-popup {
@@ -83,11 +74,16 @@ div .title {
     background: #fff;
     border-radius: 5px;
     width: auto;
+    overflow: scroll;
     min-width: 400px;
     position: relative;
     background: radial-gradient(circle at 10% 20%, rgb(255, 200, 124) 0%, rgb(252, 251, 121) 90%);
     z-index: 1;
 
+}
+
+.profile-popup::-webkit-scrollbar {
+  display: none;
 }
 
 .profile-popup .user {
