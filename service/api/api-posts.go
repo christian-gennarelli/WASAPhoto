@@ -420,7 +420,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	if conf.Width/conf.Height != 16/9 {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.Error("photo does not satisfy size requirements: it must be 16:9")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusInternalServerError, "photo does not satisfy size requirements: it must be 16:9").Error())); err != nil {
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusBadRequest, "photo does not satisfy size requirements: it must be 16:9").Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return
