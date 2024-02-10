@@ -817,31 +817,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
-  /users/{username}/followings/:
-    parameters:
-      - in: path
-        name: username
-        schema:
-          $ref: '#/components/schemas/Username'
-        required: true
   
+  /users/{username}/followings/{followed_username}:
+    parameters:
+        - in: path
+          name: username
+          schema:
+            $ref: '#/components/schemas/Username'
+          required: true
+        - in: path
+          name: followed_username
+          schema:
+            $ref: '#/components/schemas/Username'
+          required: true
+
     put: 
       operationId: followUser
       summary: Follow a new user
       tags: ['FOLLOW']
       description: |-
-        Add the user provided in the query to the followings list of the authenticated user.
+        Add the user to the followings list of the authenticated user.
       security:
         - BearerAuth: []
-      parameters:
-        - in: query
-          name: followed_username
-          schema: 
-            $ref: '#/components/schemas/Username'
       responses:
         '204': # OK Created
-          description: User 'username' successfully started to follow 'following_username'.
+          description: User 'username' successfully started to follow 'followed_username'.
         '400': # Bad request
           description: Bad request provided.
           content:
@@ -875,19 +875,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  
-  /users/{username}/followings/{followed_username}:
-    parameters:
-        - in: path
-          name: username
-          schema:
-            $ref: '#/components/schemas/Username'
-          required: true
-        - in: path
-          name: followed_username
-          schema:
-            $ref: '#/components/schemas/Username'
-          required: true
     
     delete: 
       operationId: unfollowUser
@@ -926,19 +913,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  
-  /users/{username}/followers/:
-    parameters:
-      - in: path
-        name: username
-        schema:
-          $ref: '#/components/schemas/Username'
-        required: true
-  
-  /users/{username}/banned/:
+    
+  /users/{username}/banned/{banned_username}:
     parameters:
         - in: path
           name: username
+          schema:
+            $ref: '#/components/schemas/Username'
+          required: true
+        - in: path
+          name: banned_username
           schema:
             $ref: '#/components/schemas/Username'
           required: true
@@ -948,14 +932,7 @@ paths:
       tags: ['BAN']
       summary: Ban a new user
       description: |-
-        Add a new user - here, 'ban_username' - in the list of the banned users for 'username'.
-      parameters:
-        - in: query
-          name: banned_username
-          description: Username of the user that must be added to the list of the banned users for this user.
-          schema:
-            $ref: '#/components/schemas/Username'
-          required: true
+        Add a new user - here, 'banned_username' - in the list of the banned users for 'username'.
       security:
         - BearerAuth: []
       responses:
@@ -993,19 +970,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-    
-  /users/{username}/banned/{banned_username}:
-    parameters:
-        - in: path
-          name: username
-          schema:
-            $ref: '#/components/schemas/Username'
-          required: true
-        - in: path
-          name: banned_username
-          schema:
-            $ref: '#/components/schemas/Username'
-          required: true
     
     delete: 
       operationId: unbanUser

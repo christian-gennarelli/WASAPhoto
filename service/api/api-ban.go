@@ -51,7 +51,7 @@ func (rt _router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	// Retrieve the username to be added to the list of banned user of the authenticated user from the query
-	bannedUsername := r.URL.Query().Get("banned_username")
+	bannedUsername := ps.ByName("banned_username")
 	if err := components.CheckIfValid(bannedUsername, "Username"); err != nil {
 		var mess []byte
 		if errors.Is(err, components.ErrUsernameNotValid) {

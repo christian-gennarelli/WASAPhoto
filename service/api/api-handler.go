@@ -59,11 +59,11 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.GET("/users/:username/stream", rt.wrap(rt.getMyStream))
 
 	// Follow routes
-	rt.router.PUT("/users/:username/followings/", rt.wrap(rt.followUser))
+	rt.router.PUT("/users/:username/followings/:followed_username", rt.wrap(rt.followUser))
 	rt.router.DELETE("/users/:username/followings/:followed_username", rt.wrap(rt.unfollowUser))
 
 	// Ban routes
-	rt.router.PUT("/users/:username/banned/", rt.wrap(rt.banUser))
+	rt.router.PUT("/users/:username/banned/:banned_username", rt.wrap(rt.banUser))
 	rt.router.DELETE("/users/:username/banned/:banned_username", rt.wrap(rt.unbanUser))
 
 	return rt.router

@@ -53,7 +53,7 @@ func (rt _router) followUser(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	// Retrieve the following username from the path and check if it is valid
-	followedUsername := r.URL.Query().Get("followed_username")
+	followedUsername := ps.ByName("followed_username")
 	if err = components.CheckIfValid(followedUsername, "Username"); err != nil {
 		var mess []byte
 		if errors.Is(err, components.ErrUsernameNotValid) {
