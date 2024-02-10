@@ -38,7 +38,12 @@ components:
         A user in WASAPhoto is represented by a unique ID, its unique username, name and birthdate.
       properties:
         uuid:
-          $ref: '#/components/schemas/ID'
+          description: Auth token
+          type: string
+          pattern: '^[a-z0-9]{64}$'
+          minLength: 0 # 0 because it can also be empty - returned only when logging in
+          maxLength: 64
+          example: '5rtet2gpzki10afimajobolq412p746hqomcotrq69uuf59ceepkb075zc967asp'
         username:
           $ref: '#/components/schemas/Username'
         profilePic:
@@ -106,11 +111,7 @@ components:
         creation-datetime: # Useful for the representation of the poststream, which must be displayed in reverse chronological order
           $ref: '#/components/schemas/Datetime'
         description:
-          description: Description of the photo provided by the user (if existing).
-          type: string
-          minLength: 0
-          maxLength: 128
-          pattern: ''
+          $ref: '#/components/schemas/Description'
         likers:
           $ref: '#/components/schemas/UserList'
         comments:
@@ -134,11 +135,7 @@ components:
         post_id:
           $ref: '#/components/schemas/ID'
         body:
-          description: Content of the posted comment
-          type: string
-          minLength: 1
-          maxLength: 128
-          pattern: ''
+          $ref: '#/components/schemas/Description'
         creation-datetime: # Useful for the representation of the poststream, which must be displayed in reverse chronological order
           $ref: '#/components/schemas/Datetime'
         author:
@@ -154,6 +151,14 @@ components:
         $ref: '#/components/schemas/Comment'
       minItems: 0
       maxItems: 999
+
+    Description:
+      title: Description
+      description: Textual description
+      type: string
+      pattern: ''
+      minLength: 1
+      maxLength: 128
 
     Date:
       title: date
@@ -188,13 +193,7 @@ components:
           minLength: 3
           maxLength: 3
         description:  
-          type: string
-          description: |- 
-            Description of the error in human-readable language.
-          example: 'Username not found. Please check that the username is correct, and try again.'
-          minLength: 1
-          maxLength: 128
-          pattern: ''
+         $ref: '#/components/schemas/Description'
     
 tags:
   - name: LOGIN
@@ -458,7 +457,7 @@ paths:
                   pattern: '^.*$'
                   example: a6Hdjso3moTTmal
                 description: 
-                  $ref: '#/components/schemas/Comment'
+                  $ref: '#/components/schemas/Description'
       responses:
         '201': # OK Created
           description: The post is correctly created.
@@ -1073,7 +1072,7 @@ paths:
           content:
             image/png:
               schema: 
-                description: Requested photo (in PNG).
+                description: Requested photo
                 type: string
                 format: binary
         '400': # Bad request
