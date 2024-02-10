@@ -36,8 +36,6 @@
             Post: Post
         },
         created() {
-            // Stream
-            console.log(this.user, this.followings)
             this.getUserStream();
             this.loading = false
         },

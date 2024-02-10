@@ -6,9 +6,6 @@
         methods: {
             getImgUrl
         },
-        updated(){
-            console.log(this.category, this.list)
-        }
     }
 </script>
 

@@ -76,7 +76,6 @@ import PostContent from './PostContent.vue'
             ).catch((e) => {
                 alert(e.response.data.ErrorCode + " " + e.response.data.Description)
             }).then((res)=>{
-                console.log(res.data)
                 this.$emit('add-comment', res.data)
             })
             

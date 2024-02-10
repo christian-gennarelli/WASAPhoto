@@ -78,12 +78,9 @@
             },
             followUser(){
                 this.$axios.put(
-                    '/users/' + this.authProfile.user.Username + '/followings/',
+                    '/users/' + this.authProfile.user.Username + '/followings/' + this.visitedProfile.user.Username,
                     null,
                     {
-                        params: {
-                            followed_username: this.visitedProfile.user.Username,
-                        },
                         headers: {
                             'Authorization': this.authProfile.user.ID
                         }
@@ -112,12 +109,9 @@
             },
             banUser(){
                 this.$axios.put(
-                    '/users/' + this.authProfile.user.Username + '/banned/',
+                    '/users/' + this.authProfile.user.Username + '/banned/' + this.visitedProfile.user.Username,
                     null,
                     {
-                        params: {
-                            banned_username: this.visitedProfile.user.Username
-                        },
                         headers: {
                             'Authorization': this.authProfile.user.ID
                         }
@@ -221,7 +215,6 @@
             }
         },
         created() { 
-            console.log(this.authProfile.followings)
             this.getVisitedProfile()
         },
         components:{

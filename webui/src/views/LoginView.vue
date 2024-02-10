@@ -19,7 +19,6 @@ export default {
                     responseType: 'text',
                 }
             ).then((res) => {
-                console.log(res.data)
                 this.invalid = false
                 localStorage.setItem('Username', res.data.Username) 
                 localStorage.setItem('ID', res.data.ID)
