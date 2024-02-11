@@ -357,7 +357,7 @@ func (rt _router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	// Access the request body
 	formData := r.MultipartForm
 
-	rawPhoto := formData.File["photo"]
+	rawPhoto := formData.File["photoFile"]
 	if len(rawPhoto) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		ctx.Logger.Error("no photo provided")

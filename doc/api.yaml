@@ -47,7 +47,7 @@ components:
         username:
           $ref: '#/components/schemas/Username'
         profilePic:
-          $ref: "#/components/schemas/PhotoURL"
+          $ref: "#/components/schemas/PhotoPath"
         name:
           description: Real-life name/surname of the user
           type: string
@@ -68,15 +68,15 @@ components:
       minItems: 0
       maxItems: 999 
 
-    PhotoURL:
-      title: PhotoURL
+    PhotoPath:
+      title: PhotoPath
       type: string
       description: |-
         URL of the photo, actually stored on server-side.
         The actual image will be sent as response of a separate request.
-      minLength: 45 # http://WASAPhotoserver.com/photos/posts/1.png
-      maxLength: 60 # http://WASAPhotoserver.com/photos/profile_pics/999999999.png
-      example: "http://WASAPhotoserver.com/photos/profile_pics/default.png"
+      minLength: 1 # posts/1.png
+      maxLength: 26 # profile_pics/999999999.png
+      example: "profile_pics/default.png"
     
     Profile:
       title: Profile
@@ -107,7 +107,7 @@ components:
         post_id:
           $ref: '#/components/schemas/ID'
         photo: 
-          $ref: "#/components/schemas/PhotoURL"
+          $ref: "#/components/schemas/PhotoPath"
         creation-datetime: # Useful for the representation of the poststream, which must be displayed in reverse chronological order
           $ref: '#/components/schemas/Datetime'
         description:
@@ -448,7 +448,7 @@ paths:
               description: Photo and its description.
               type: object
               properties:
-                photo:
+                photoFile:
                   description: Image to be uploaded. Note that it must in a 16:9 format. , either jpeg or png.
                   type: string
                   format: binary

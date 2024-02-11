@@ -137,7 +137,7 @@
             },
             uploadPhoto(){
                 const formData = new FormData();
-                formData.append('photo', this.photo);
+                formData.append('photoFile', this.photo);
                 formData.append('description', this.description)
                 this.$axios.post(
                     '/users/' + this.authProfile.user.Username + '/profile/posts/',
