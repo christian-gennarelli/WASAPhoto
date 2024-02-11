@@ -55,7 +55,7 @@
             <div v-if="this.containerClass == 'post-overlay'">
                 <span class="comments-title"> Comments </span>
                 <textarea v-model="comment" style="display: block; border-radius: 10px; width: 50%; height: 75px" placeholder="Write a comment!" @keyup.enter="this.$emit('comment-post', comment); this.comment=''"></textarea>
-                <div style="display: block" v-for="comment, key in post.Comments" :key="key">
+                <div style="display: block" v-for="(comment, key) in post.Comments" :key="key">
                     <div style="display: grid; grid-template-columns: 3fr 1fr;" class="display: inline-block">
                         <div>
                             <router-link @click="this.$emit('change-class')" :to="{ name: 'profile', params: {username: comment.Author }}"> 

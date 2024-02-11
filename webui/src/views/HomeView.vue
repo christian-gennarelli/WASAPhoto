@@ -50,6 +50,7 @@
             <Post
                 v-if="posts"
                 v-for="(post, key) in posts" 
+                :key="key"
                 :post="post" 
                 :user="user"
                 @add-like="this.posts[key].Likes ? this.posts[key].Likes.unshift(this.user) : this.posts[key].Likes = [this.user]"

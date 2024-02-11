@@ -280,6 +280,7 @@
     <div class="home-container" v-if="!showFollowers && !showFollowings && !showBanned && visitedProfile.posts">
         <Post  
             v-for="(post, key) in visitedProfile.posts" 
+            :key="key"
             :post="post"
             :user="authProfile.user"
             @add-like="this.visitedProfile.posts[key].Likes ? this.visitedProfile.posts[key].Likes.unshift(this.authProfile.user) : this.visitedProfile.posts[key].Likes = [this.authProfile.user]"
