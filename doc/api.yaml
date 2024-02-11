@@ -556,19 +556,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /users/{username}/profile/posts/{post_id}/likes/:
+  /users/{username}/profile/posts/{post_id}/likes/{liker_username}:
     parameters:
       - in: path
         name: username
         schema:
           $ref: '#/components/schemas/Username'
+        description: Username of the owner of the post
         required: true
       - in: path
         name: post_id
         schema:
           $ref: '#/components/schemas/ID'
+        description: ID of the post
         required: true
-    
+      - in: path
+        name: liker_username
+        schema:
+          $ref: '#/components/schemas/Username'
+        description: Username of the user that liked username's post with id post_id and now wants to delete its like from it.
+        required: true
+
     put:
       operationId: likePhoto
       tags: ['POST']
@@ -594,7 +602,7 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403': # Unauthorized
           description: |-
-            The authenticated user banned the owner of the post, or viceversa.
+            The authenticated user banned the owner of the post, or viceversa. It could also be the case that the auth username and the liker_username do NOT coincide.
           content:
             application/json:
               schema:
@@ -613,27 +621,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
-  /users/{username}/profile/posts/{post_id}/likes/{liker_username}:
-    parameters:
-      - in: path
-        name: username
-        schema:
-          $ref: '#/components/schemas/Username'
-        description: Username of the owner of the post
-        required: true
-      - in: path
-        name: post_id
-        schema:
-          $ref: '#/components/schemas/ID'
-        description: ID of the post
-        required: true
-      - in: path
-        name: liker_username
-        schema:
-          $ref: '#/components/schemas/Username'
-        description: Username of the user that liked username's post with id post_id and now wants to delete its like from it.
-        required: true
 
     delete:
       operationId: unlikePhoto

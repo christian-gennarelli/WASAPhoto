@@ -53,6 +53,16 @@ func (rt _router) likePhoto(w http.ResponseWriter, r *http.Request, ps httproute
 		return
 	}
 
+	likerUsername_path := ps.ByName("liker_username")
+	if likerUsername_path != *authUsername {
+		w.WriteHeader(http.StatusForbidden)
+		ctx.Logger.Error("authenticated user cannot like a photo on behalf of another user")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusForbidden, "authenticated user cannot like a photo on behalf of another user").Error())); err != nil {
+			ctx.Logger.WithError(err).Error("error while writing the response")
+		}
+		return
+	}
+
 	// Add the username of the authenticated user to the list of likes of the post
 	err = rt.db.AddLikeToPost(*authUsername, *postID)
 	if err != nil {

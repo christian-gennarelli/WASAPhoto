@@ -47,8 +47,8 @@ func (rt _router) getUserProfile(w http.ResponseWriter, r *http.Request, ps http
 	// Check if the authenticated user banned the user provided in the path, or viceversa
 	if err := rt.db.CheckIfBanned(*authUsername, username); err == nil {
 		w.WriteHeader(http.StatusForbidden)
-		ctx.Logger.Error("cannot get the profile a banned user or that has banned the authenticated user")
-		if _, err = w.Write([]byte(fmt.Errorf(components.StatusForbidden, "cannot get the profile of an user or that has banned the authenticated user").Error())); err != nil {
+		ctx.Logger.Error("cannot get the profile of a banned user or that has banned the authenticated user")
+		if _, err = w.Write([]byte(fmt.Errorf(components.StatusForbidden, "cannot get the profile of a banned user or that has banned the authenticated user").Error())); err != nil {
 			ctx.Logger.WithError(err).Error("error while writing the response")
 		}
 		return

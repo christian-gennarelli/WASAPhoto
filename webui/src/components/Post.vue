@@ -36,7 +36,7 @@ import PostContent from './PostContent.vue'
             }
             else {
                 this.$axios.put(
-                    '/users/' + this.post.Author + '/profile/posts/' + this.post.PostID + '/likes/',
+                    '/users/' + this.post.Author + '/profile/posts/' + this.post.PostID + '/likes/' + this.user.Username,
                     null, 
                     {
                         headers: {
