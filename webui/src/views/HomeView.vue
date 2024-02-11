@@ -1,5 +1,5 @@
 <script>
-    import Header from '../components/Header.vue'
+    import HeaderTopBar from '../components/HeaderTopBar.vue'
     import Post from '../components/Post.vue'
     export default {
         data() {
@@ -32,7 +32,7 @@
             },
         },
         components: {
-            Header: Header,
+            HeaderTopBar: HeaderTopBar,
             Post: Post
         },
         created() {
@@ -44,7 +44,7 @@
 
 <template>
     <div v-if="!loading">
-        <Header></Header>
+        <HeaderTopBar></HeaderTopBar>
         <p style="text-align: center;" v-if="!posts"> No posts to see yet... start following!</p>
         <div v-else class="home-container"> 
             <Post

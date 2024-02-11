@@ -224,7 +224,7 @@
 </script>
 
 <template>
-    <Header></Header>
+    <HeaderTopBar></HeaderTopBar>
     <div v-if="!loading" class="profile-container"> 
         <div class="left">
             <img class="profile-img" :src="this.getImgUrl(this.visitedProfile.user.ProfilePic)">
