@@ -65,7 +65,7 @@
                         </div>
                         <div>
                             <span style="float: right"> {{ comment.CreationDatetime}} </span>
-                            <span><img title="Delete comment" @click="this.$emit('delete-comment', comment.CommentID)" style="border-radius: 15px; width: 24px; height: 24px; float: right" v-if="comment.Author == username"  src="@/assets/buttons/x-red.png"></span>
+                            <span v-if="comment.Author == username"><img title="Delete comment" @click="this.$emit('delete-comment', comment.CommentID)" style="border-radius: 15px; width: 24px; height: 24px; float: right" src="@/assets/buttons/x-red.png"></span>
                         </div>
                     </div>
                 </div>
