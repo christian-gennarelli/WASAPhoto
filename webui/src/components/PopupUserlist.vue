@@ -18,7 +18,8 @@
                 <img type="button" @click="this.$emit('change-show')" class="exit" src="@/assets/buttons/close.png">
                 <div class="user" v-for="(user, key) in list" :key="key" >
                     <img class="profile-img" :src="this.getImgUrl(user.ProfilePic)" style="width: 30px; height: 30px;">
-                    <router-link @click="this.$emit('change-show')" :to="{ name: 'profile', params: {username: user.Username }}">
+                    <span v-if="this.category == 'Banned' "> {{ user.Username }} </span>
+                    <router-link v-else @click="this.$emit('change-show')" :to="{ name: 'profile', params: {username: user.Username }}">
                         {{ user.Username }}
                     </router-link>
                     <button v-if="category=='Banned'" class="banned-btn" @click="this.$emit('unban-user', user.Username)"> Unban </button>
@@ -103,15 +104,6 @@
 
 .profile-popup .btn-unban:hover {
     font-style: italic;
-}
-
-.exit {
-    border-radius: 25px;
-    width: 32px;
-    height: 32px;
-    position: absolute;
-    top: 0;
-    right: 0;
 }
 
 </style>
