@@ -197,7 +197,11 @@
                         }
                     }
                 }).catch((e) => {
-                    alert(e.response.data.ErrorCode + " " + e.response.data.Description)
+                    if (e.response.data.ErrorCode == 403){
+                        alert('You cannot visit this profile: either you banned this user or it has banned you. In the former case, go to your profile, click on "Banned" and search for "' + this.$route.params.username + '" if you want to unban it.')
+                    } else {
+                        alert(e.response.data.ErrorCode + " " + e.response.data.Description)
+                    }
                     this.$router.push('/')
                 })
                 this.loading = false
@@ -239,7 +243,7 @@
             <button v-if="!this.isAuthProfile" class="left-btn btn-red" @click="banUser"> Ban </button>
         </div>
 
-        <div class="right" :style="[!isAuthProfile ? {'grid-template-columns': '1fr 1fr 1fr'} : {'': ''} ]"> 
+        <div class="right" :style="[!isAuthProfile ? {'grid-template-columns': '1fr 1fr 1fr 1fr'} : {'': ''} ]"> 
             <PopupUserlist
                 category="Followers"
                 :show="this.showFollowers"
@@ -263,6 +267,7 @@
                 @remove-comment="(commentID) => this.visitedProfile.posts[key].Comments = this.visitedProfile.posts[key].Comments.filter(c => c.CommentID != commentID)"
             >
             </PopupUserlist>
+            <span style="font-size: 25px;"> <span style="font-weight: bold;"> Posts: </span> {{ this.visitedProfile.posts.length }} </span> 
             <button v-if="this.visitedProfile.user.Username == this.authProfile.user.Username" @click="this.showUpload=true"> Upload new post </button>
             <div v-if="showUpload" class="upload-overlay">
                 <div class="upload-popup">
@@ -348,7 +353,7 @@
 
 .right {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
     grid-template-rows: 1fr;
     align-items: center;
     justify-items: center;
