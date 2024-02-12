@@ -45,7 +45,7 @@
                 </div>
                 <img class="like-icon" v-if="liked" type="button" @click="this.$emit('change-like')" src="@/assets/buttons/liked.png">
                 <img class="like-icon" v-else type="button" @click="this.$emit('change-like')" src="@/assets/buttons/unliked.png">
-                <div class="comments-title" style="margin-left: 5px" @click="this.$emit('change-class')"> Comments: </div> {{ post.Comments ? post.Comments.length : 0 }}
+                <div class="post-comments" style="margin-left: 5px" @click="this.containerClass == 'post-container' ? this.$emit('change-class') : null"> Comments: </div> {{ post.Comments ? post.Comments.length : 0 }}
                 <div>
                     <router-link @click="this.$emit('change-class')" :to="{ name: 'profile', params: {username: post.Author }}"> <span class="post-body-title"> {{ post.Author }}: </span> </router-link>
                     <span class="post-body-description"> {{ post.Description }} </span> 
@@ -53,7 +53,7 @@
             </div> 
             <br>
             <div v-if="this.containerClass == 'post-overlay'">
-                <span class="comments-title"> Comments </span>
+                <span class="post-comments"> Comments </span>
                 <textarea v-model="comment" style="display: block; border-radius: 10px; width: 50%; height: 75px" placeholder="Write a comment!" @keyup.enter="this.$emit('comment-post', comment); this.comment=''"></textarea>
                 <div style="display: block" v-for="(comment, key) in post.Comments" :key="key">
                     <div style="display: grid; grid-template-columns: 3fr 1fr;" class="display: inline-block">
@@ -182,7 +182,7 @@ a:hover {
   display: none;
 }
 
-.comments-title {
+.post-comments {
     font-weight: bold;
     font-size: 18px;
     display: inline-block
