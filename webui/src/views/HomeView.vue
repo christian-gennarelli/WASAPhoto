@@ -48,7 +48,6 @@
         <p style="text-align: center;" v-if="!posts"> No posts to see yet... start following!</p>
         <div v-else class="home-container"> 
             <Post
-                v-if="posts"
                 v-for="(post, key) in posts" 
                 :key="key"
                 :post="post" 
