@@ -1005,9 +1005,9 @@ paths:
         schema:
           type: string
           minLength: 11 # 6 (posts/) + 4 (x.png) -> posts/1.png
-          maxLength: 33 # 13 ("profile_pics/") + 16 (max username length) -> profile_pics/wasaphotoexample.png
+          maxLength: 33 # 13 ("profile_pics/") + 16 (max username length) -> profile_pics/default.png
           pattern: ''
-          example: "profile_pics/wasaphotoexample.png"
+          example: "profile_pics/default.png"
         required: true
     
     get:
