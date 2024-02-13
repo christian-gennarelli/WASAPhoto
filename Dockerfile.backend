@@ -6,6 +6,5 @@ FROM debian:bookworm
 EXPOSE 3000
 WORKDIR /app/
 COPY --from=builder /app/webapi ./
-RUN mkdir photos
 ADD photos ./photos
 CMD ["/app/webapi"]
